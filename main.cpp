@@ -9,13 +9,9 @@ int main(int ac, char **av)
     {
         int portNum = atoi(av[1]);
         std::string pass = av[2];
-        
-        try {
-            Check checker(portNum, pass);
-        } catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-        }
-        
+
+        Check Check(portNum, pass);  // try / catch yapılıp serverin default degerlerle başlaması sağlanabilir ? 
+
         Server Server(portNum);
 
     }
