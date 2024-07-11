@@ -1,27 +1,28 @@
 
 #include <iostream>
-#include "Check/Check.hpp"
+#include "Checker/Checker.hpp"
 #include "Server/Server.hpp"
+#include "Exception/ExceptionMsg.hpp"
 
-int main(int ac, char **av)
-{   
-    if (ac == 3)
-    {
+
+int main(int ac, char **av) {
+    if (ac == 3) {
         std::string port = av[1];
         std::string pass = av[2];
 
         try {
-            int portNum = Check::CheckPort(port);
+            int portNum = Checker::CheckerPort(port);
             Server server(portNum, pass);
-        } catch (std::exception &e) {
+        } catch (Exception::Server &e) {
+            std::cerr << e.what() << std::endl;
+        } catch (Exception::Client &e) {
             std::cerr << e.what() << std::endl;
         }
     }
-    else {
-        std::cerr << "yetersiz argüman sayisi" << std::endl;
-    }
+    else
+        std::cout << "arguman sayisi eksik" << std::endl;
 
-    std::cout << "I am here " << std::endl; // server burada sonlandırılır 
+    // server sonlandırma
 
     return (0);
 }

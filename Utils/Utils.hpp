@@ -1,14 +1,14 @@
-//
-// Created by MONSTER on 10.07.2024.
-//
+#ifndef UTILS_HPP
+#define UTILS_HPP
 
-#ifndef FT_IRC_UTILS_HPP
-#define FT_IRC_UTILS_HPP
+#include <iostream>
+class Utils
+{
+    private:
 
-
-class Utils {
-
+    public:
+        static std::string time();
 };
 
 
-#endif //FT_IRC_UTILS_HPP
+#endif

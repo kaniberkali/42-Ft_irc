@@ -2,7 +2,7 @@
 NAME = ircserv
 
 SRC = main.cpp \
-	  Check/Check.cpp \
+	  Checkerer/Checker.cpp \
 	  Server/Server.cpp \
 
 OBJ = $(SRC:.cpp=.o)

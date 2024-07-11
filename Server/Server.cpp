@@ -13,6 +13,4 @@ Server::Server(int port, std::string pass) : _port(port), _pass(pass) {
 
     std::cout << "Port: " << _port << std::endl;
     std::cout << "Pass: " << _pass << std::endl;
-
-    
 }
