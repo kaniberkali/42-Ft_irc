@@ -1,9 +1,5 @@
-//
-// Created by MONSTER on 10.07.2024.
-//
-
-#ifndef FT_IRC_MESSAGE_HPP
-#define FT_IRC_MESSAGE_HPP
+#ifndef MESSAGE_HPP
+# define MESSAGE_HPP
 
 
 class Message {
@@ -11,4 +7,4 @@ class Message {
 };
 
 
-#endif //FT_IRC_MESSAGE_HPP
+#endif

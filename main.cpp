@@ -2,7 +2,8 @@
 #include <iostream>
 #include "Checker/Checker.hpp"
 #include "Server/Server.hpp"
-#include "Exception/ExceptionMsg.hpp"
+#include "Exception/ServerException.hpp"
+#include "Exception/ClientException.hpp"
 
 
 int main(int ac, char **av) {
@@ -11,12 +12,15 @@ int main(int ac, char **av) {
         std::string pass = av[2];
 
         try {
-            int portNum = Checker::CheckerPort(port);
+            int portNum = Checker::port(port);
             Server server(portNum, pass);
-        } catch (Exception::Server &e) {
+        } catch (const ServerException &e) {
             std::cerr << e.what() << std::endl;
-        } catch (Exception::Client &e) {
+        }
+        catch (const ClientException &e)
+        {
             std::cerr << e.what() << std::endl;
+
         }
     }
     else

@@ -1,29 +1,20 @@
-#include "Checkerer.hpp"
+#include "Checker.hpp"
 #include "../Server/Server.hpp"
 #include <stdlib.h>
-#include "../Exception/ExceptionMsg.hpp"
+#include "../Exception/ServerException.hpp"
+#include "../Exception/ClientException.hpp"
 
-Checker::Checker() {
-    std::cout << "Checker constructor" << std::endl;
-}
-
-Checker::~Checker() {
-    std::cout << "Checker destructor" << std::endl;
-}
-
-int Checker::CheckerPort(std::string port) {
-
+int Checker::port(std::string port)
+{
     for (size_t i = 0; i < port.length(); i++)
     {
         if (!isdigit(port[i]))
-            throw std::invalid_argument("Port number must be a number");
+            throw ClientException::ASDException();
     }
 
-
     int portNum = atoi(port.c_str());
-
     if (portNum < MIN_PORT || portNum > MAX_PORT)
-        throw Exception::Server(INVALID_PORT);
+        throw ServerException::PortRangeException();
 
     return portNum;
 }
