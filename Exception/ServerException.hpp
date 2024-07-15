@@ -3,21 +3,23 @@
 
 #include <iostream>
 
+# define INVALID_PORT_RANGE "Port number is out of range"
+# define PORT_NOT_DIGIT "Port number has to be include digit number"
+# define SOCKET_NOT_CREATED "Socket fd is not created"
+# define BINDING_FAILED "Binding process didn't work for socket fd between and address"
+# define SOCKET_NOT_ACCEPT "Socket not accept"
+# define SOCKET_LISTEN_EXCEPTION "Listen process didn't work for socket fd"
+
 class ServerException : public std::exception {
     private:
         std::string _message;
     public:
         class PortRangeException;
-        class InvalidPortException;
-        class InvalidIPException;
-        class InvalidSocketException;
-        class InvalidBindException;
-        class InvalidListenException;
+        class PortDigitException;
         class SocketException;
         class BindException;
-        class ListenException;
         class AcceptException;
-        class ReceiveException;
+        class ListenException;
         ServerException(const std::string& msg = "") : _message(msg) {}
         virtual ~ServerException() throw() {}
         virtual const char* what() const throw() { return _message.c_str(); }
@@ -25,57 +27,34 @@ class ServerException : public std::exception {
 
 class ServerException::PortRangeException : public ServerException {
 public:
-    PortRangeException() : ServerException("Port Number is Out of Range") {}
+    PortRangeException() : ServerException(INVALID_PORT_RANGE) {}
 };
 
-class ServerException::InvalidPortException : public ServerException {
+class ServerException::PortDigitException : public ServerException {
 public:
-    InvalidPortException() : ServerException("Port Number is Invalid") {}
-};
-
-class ServerException::InvalidIPException : public ServerException {
-public:
-    InvalidIPException() : ServerException("IP Address is Invalid") {}
-};
-
-class ServerException::InvalidSocketException : public ServerException {
-public:
-    InvalidSocketException() : ServerException("Socket is Invalid") {}
-};
-
-class ServerException::InvalidBindException : public ServerException {
-public:
-    InvalidBindException() : ServerException("Bind is Invalid") {}
-};
-
-class ServerException::InvalidListenException : public ServerException {
-public:
-    InvalidListenException() : ServerException("Listen is Invalid") {}
+    PortDigitException() : ServerException(PORT_NOT_DIGIT) {}
 };
 
 class ServerException::SocketException : public ServerException {
 public:
-    SocketException() : ServerException("Socket is Invalid") {}
+    SocketException() : ServerException(SOCKET_NOT_CREATED) {}
 };
 
-class ServerException::BindException : public ServerException {
+class ServerException::BindException : public  ServerException {
 public:
-    BindException() : ServerException("Bind is Invalid") {}
-};
-
-class ServerException::ListenException : public ServerException {
-public:
-    ListenException() : ServerException("Listen is Invalid") {}
+    BindException() : ServerException(BINDING_FAILED) {}
 };
 
 class ServerException::AcceptException : public ServerException {
 public:
-    AcceptException() : ServerException("Accept is Invalid") {}
+    AcceptException() : ServerException(SOCKET_NOT_ACCEPT) {}
 };
 
-class ServerException::ReceiveException : public ServerException {
+class ServerException::ListenException : public ServerException {
 public:
-    ReceiveException() : ServerException("Receive is Invalid") {}
+    ListenException() : ServerException(SOCKET_LISTEN_EXCEPTION) {}
 };
+
+
 
 #endif

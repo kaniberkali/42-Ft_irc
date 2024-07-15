@@ -9,7 +9,7 @@ int Checker::port(std::string port)
     for (size_t i = 0; i < port.length(); i++)
     {
         if (!isdigit(port[i]))
-            throw ClientException::ASDException();
+            throw ServerException::PortDigitException();
     }
 
     int portNum = atoi(port.c_str());

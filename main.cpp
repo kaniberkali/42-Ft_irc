@@ -5,8 +5,8 @@
 #include "Exception/ServerException.hpp"
 #include "Exception/ClientException.hpp"
 
-
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     if (ac == 3) {
         std::string port = av[1];
         std::string pass = av[2];
@@ -22,6 +22,9 @@ int main(int ac, char **av) {
             std::cerr << e.what() << std::endl;
 
         }
+
+
+
     }
     else
         std::cout << "arguman sayisi eksik" << std::endl;

@@ -16,6 +16,8 @@
 # define MAX_CLIENTS 44
 # define BUFFER_SIZE 1024
 
+#include <vector>
+#include <poll.h>
 class Server
 {
     private:
@@ -25,17 +27,17 @@ class Server
         bool _terminate;
         int _socketFd;
         struct sockaddr_in _serverAddr;
+        std::vector<struct pollfd> _fds;
     public:
         Server(void);
         Server(int port, std::string password);
         Server(Server const &server);
         ~Server(void);
         Server const &operator=(Server const &server);
-        int getPort(void) const;
-        std::string getPassword(void) const;
-        void setSettings(int port, std::string password, int maxClients);
         void quit(void);
-        void initSocket(void);
+        void init(void);
+        void listen(void);
+        void listen(int fd);
 };
 
 
