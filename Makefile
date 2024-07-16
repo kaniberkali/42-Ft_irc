@@ -5,7 +5,9 @@ SRC = main.cpp \
 	  Checker/Checker.cpp \
 	  Server/Server.cpp \
 	  Logger/Logger.cpp \
-	  Utils/Utils.cpp
+	  Utils/Utils.cpp \
+	  Parser/Parser.cpp \
+	  Client/Client.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

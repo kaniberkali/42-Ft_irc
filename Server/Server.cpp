@@ -3,9 +3,9 @@
 #include "../Utils/Utils.hpp"
 #include <csignal>
 #include "../Exception/ServerException.hpp"
-#include <stdlib.h>
-#include <cstring>
-#include <cerrno>
+#include "../Parser/Parser.hpp"
+
+bool Server::_terminate = false;
 
 Server::Server()
 {
@@ -26,6 +26,7 @@ Server::~Server()
 void signalHandler(int signal)
 {
     Logger::Info("Signal " + Utils::toString(signal) + " received");
+    Server::quit();
 }
 
 Server::Server(int port, std::string password) : _port(port), _password(password)
@@ -86,19 +87,58 @@ void Server::init(void)
 void Server::listen(int fd)
 {
     Logger::Info("Listening to socket " + Utils::toString(fd));
+
     struct pollfd socketPoll;
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     _fds.push_back(socketPoll);
+    if (_socketFd != fd)
+    {
+        std::string message = read(fd);
+        clientInfo info = Parser::connectionMessage(message);
+        newClient(fd, info);
+        Logger::Debug(info.nickName + " connected with real name " + info.realName + " and username " + info.userName);
+        Logger::Info(info.realName + " connected with nickname " + info.nickName);
+    }
+}
+
+void Server::newClient(int fd, clientInfo info)
+{
+    Client *client = new Client(fd, info);
+    _clients.push_back(client);
+    Logger::Info("New client connected");
+}
+
+void Server::read()
+{
+    Logger::Info("Reading from clients");
+    for (size_t i = 1; i < _fds.size(); i++)
+    {
+        if (_fds[i].revents == POLLIN)
+        {
+            Logger::Trace("Reading from client socket " + Utils::toString(_fds[i].fd));
+            std::string message = read(_fds[i].fd);
+            Logger::Info("Message received from client socket " + Utils::toString(_fds[i].fd));
+        }
+    }
+}
+
+std::string Server::read(int fd)
+{
+    char buffer[BUFFER_SIZE];
+    int readSize = recv(fd, buffer, BUFFER_SIZE, 0);
+    if (readSize < 0)
+        throw ServerException::ReadException();
+    return std::string(buffer);
 }
 
 void Server::listen(void)
 {
     Logger::Info("Listening to clients");
-    while (!_terminate)
-    {
+    while (!_terminate) {
         if (poll(&_fds[0], _fds.size(), 6000) < 0)
         {
+            Logger::Error("Polling failed");
             quit();
             break;
         }
@@ -113,5 +153,6 @@ void Server::listen(void)
             Logger::Info("New client connected");
             listen(fd);
         }
+        read();
     }
 }

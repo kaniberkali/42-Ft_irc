@@ -9,6 +9,7 @@
 # define BINDING_FAILED "Binding process didn't work for socket fd between and address"
 # define SOCKET_NOT_ACCEPT "Socket not accept"
 # define SOCKET_LISTEN_EXCEPTION "Listen process didn't work for socket fd"
+# define SOCKET_READ_EXCEPTION "Read process didn't work for socket fd"
 
 class ServerException : public std::exception {
     private:
@@ -20,6 +21,7 @@ class ServerException : public std::exception {
         class BindException;
         class AcceptException;
         class ListenException;
+        class ReadException;
         ServerException(const std::string& msg = "") : _message(msg) {}
         virtual ~ServerException() throw() {}
         virtual const char* what() const throw() { return _message.c_str(); }
@@ -53,6 +55,11 @@ public:
 class ServerException::ListenException : public ServerException {
 public:
     ListenException() : ServerException(SOCKET_LISTEN_EXCEPTION) {}
+};
+
+class ServerException::ReadException : public ServerException {
+public:
+    ReadException() : ServerException(SOCKET_READ_EXCEPTION) {}
 };
 
 

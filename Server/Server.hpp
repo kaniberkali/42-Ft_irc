@@ -18,26 +18,32 @@
 
 #include <vector>
 #include <poll.h>
+#include "../Client/Client.hpp"
+
 class Server
 {
     private:
         int _maxClients;
         int _port;
         std::string _password;
-        bool _terminate;
+        static bool _terminate;
         int _socketFd;
         struct sockaddr_in _serverAddr;
         std::vector<struct pollfd> _fds;
+        std::vector<Client *> _clients;
     public:
         Server(void);
         Server(int port, std::string password);
         Server(Server const &server);
         ~Server(void);
         Server const &operator=(Server const &server);
-        void quit(void);
+        static void quit(void);
         void init(void);
         void listen(void);
         void listen(int fd);
+        void read();
+        void newClient(int fd, clientInfo info);
+        std::string read(int fd);
 };
 
 
