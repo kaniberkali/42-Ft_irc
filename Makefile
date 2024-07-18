@@ -8,6 +8,7 @@ SRC = main.cpp \
 	  Utils/Utils.cpp \
 	  Parser/Parser.cpp \
 	  Client/Client.cpp \
+	  Command/Command.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

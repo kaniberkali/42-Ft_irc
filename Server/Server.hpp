@@ -14,7 +14,7 @@
 # define MAX_PORT 65535
 
 # define MAX_CLIENTS 44
-# define BUFFER_SIZE 1024
+# define BUFFER_SIZE 512
 
 #include <vector>
 #include <poll.h>
@@ -31,6 +31,10 @@ class Server
         struct sockaddr_in _serverAddr;
         std::vector<struct pollfd> _fds;
         std::vector<Client *> _clients;
+
+        std::vector<std::string> messages;
+
+
     public:
         Server(void);
         Server(int port, std::string password);
@@ -43,7 +47,9 @@ class Server
         void listen(int fd);
         void read();
         void newClient(int fd, clientInfo info);
+        void removeClient(int fd);
         std::string read(int fd);
+        void close(int fd);
 };
 
 

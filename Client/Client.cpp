@@ -18,3 +18,8 @@ bool Client::isLogin() const
     return _login;
 }
 
+int Client::getFd() const
+{
+    return _fd;
+}
+

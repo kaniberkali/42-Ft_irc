@@ -18,7 +18,7 @@ class Client
         Client(int fd, clientInfo info);
         ~Client();
         bool isLogin() const;
-
+        int getFd() const;
 };
 
 #endif

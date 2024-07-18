@@ -4,6 +4,8 @@
 #include <csignal>
 #include "../Exception/ServerException.hpp"
 #include "../Parser/Parser.hpp"
+#include "../Command/Command.hpp"
+#include <cstring>
 
 bool Server::_terminate = false;
 
@@ -15,11 +17,14 @@ Server::Server()
 
 Server::~Server()
 {
-    for (size_t i = 0; i < _fds.size(); i++)
+    for (size_t i = 0; i < _clients.size(); i++)
     {
         Logger::Warning("Closing client socket " + Utils::toString(_fds[i].fd));
-        close(_fds[i].fd);
+        Logger::Warning("Removing client " + Utils::toString(_clients[i]->getFd()));
+        removeClient(_clients[i]->getFd());
     }
+    Logger::Warning("Closing server socket " + Utils::toString(_socketFd));
+    ::close(_socketFd);
     Logger::Error("Server stopped");
 }
 
@@ -87,55 +92,72 @@ void Server::init(void)
 void Server::listen(int fd)
 {
     Logger::Info("Listening to socket " + Utils::toString(fd));
-
     struct pollfd socketPoll;
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     _fds.push_back(socketPoll);
-    if (_socketFd != fd)
-    {
-        std::string message = read(fd);
-        clientInfo info = Parser::connectionMessage(message);
-        newClient(fd, info);
-        Logger::Debug(info.nickName + " connected with real name " + info.realName + " and username " + info.userName);
-        Logger::Info(info.realName + " connected with nickname " + info.nickName);
-    }
 }
+
 
 void Server::newClient(int fd, clientInfo info)
 {
+    Logger::Info("New client connecting");
     Client *client = new Client(fd, info);
     _clients.push_back(client);
     Logger::Info("New client connected");
 }
 
-void Server::read()
+void Server::close(int fd)
 {
-    Logger::Info("Reading from clients");
-    for (size_t i = 1; i < _fds.size(); i++)
+    Logger::Info("Closing client socket " + Utils::toString(fd));
+    for (size_t i = 0; i < _fds.size(); i++)
     {
-        if (_fds[i].revents == POLLIN)
+        if (_fds[i].fd == fd)
         {
-            Logger::Trace("Reading from client socket " + Utils::toString(_fds[i].fd));
-            std::string message = read(_fds[i].fd);
-            Logger::Info("Message received from client socket " + Utils::toString(_fds[i].fd));
+            _fds.erase(_fds.begin() + i);
+            break;
         }
     }
+    ::close(fd);
+    Logger::Info("Client socket " + Utils::toString(fd) + " closed");
+}
+
+void Server::removeClient(int fd)
+{
+    Logger::Info("Removing client " + Utils::toString(fd));
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getFd() == fd)
+        {
+            delete _clients[i];
+            _clients.erase(_clients.begin() + i);
+            break;
+        }
+    }
+    close(fd);
+    Logger::Info("Client " + Utils::toString(fd) + " removed");
 }
 
 std::string Server::read(int fd)
 {
     char buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
+    Logger::Trace("Reading from client socket " + Utils::toString(fd));
     int readSize = recv(fd, buffer, BUFFER_SIZE, 0);
     if (readSize < 0)
+    {
+        Logger::Error("Failed to read from client socket " + Utils::toString(fd));
         throw ServerException::ReadException();
-    return std::string(buffer);
+    }
+    Logger::Trace("Read " + Utils::toString(readSize) + " bytes from client socket " + Utils::toString(fd));
+    return std::string(buffer, readSize);
 }
 
 void Server::listen(void)
 {
     Logger::Info("Listening to clients");
-    while (!_terminate) {
+    while (!_terminate)
+    {
         if (poll(&_fds[0], _fds.size(), 6000) < 0)
         {
             Logger::Error("Polling failed");
@@ -153,6 +175,15 @@ void Server::listen(void)
             Logger::Info("New client connected");
             listen(fd);
         }
-        read();
+        Logger::Info("Reading from clients");
+        for (size_t i = 1; i < _fds.size(); i++)
+        {
+            if (_fds[i].revents == POLLIN)
+            {
+                std::string message = read(_fds[i].fd);
+                Logger::Info("Received message from client " + Utils::toString(_fds[i].fd) + ": " + message);
+                Command::Perform(*this, message, _fds[i].fd);
+            }
+        }
     }
 }

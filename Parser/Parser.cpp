@@ -1,7 +1,26 @@
 #include "Parser.hpp"
 #include "../Logger/Logger.hpp"
-clientInfo Parser::connectionMessage(std::string message) {
+
+clientInfo Parser::connectionMessage(std::string message)
+{
     clientInfo info;
-    Logger::Debug("Parsing connection message: " + message);
+    std::stringstream stream(message);
+    std::string word;
+
+    while (stream >> word)
+    {
+        if (word == "USER")
+        {
+            stream >> info.userName;
+            std::getline(stream, info.realName, ':');
+            std::getline(stream, info.realName);
+        }
+        else if (word == "NICK")
+            stream >> info.nickName;
+        else if (word == "PASS")
+            stream >> info.password;
+    }
+    if (!info.realName.empty() && info.realName[0] == ' ')
+        info.realName.erase(0, 1);
     return info;
 }
