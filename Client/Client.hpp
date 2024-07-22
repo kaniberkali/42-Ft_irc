@@ -1,12 +1,13 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
+#include <poll.h>
 #include "../Parser/Parser.hpp"
 
 class Client
 {
     private:
-        int _fd;
+        struct pollfd _fd;
         bool _login;
         std::string _userName;
         std::string _hostName;
@@ -15,10 +16,12 @@ class Client
         std::string _nickName;
         std::string _password;
     public:
-        Client(int fd, clientInfo info);
+        Client(struct pollfd fd);
+        void setInfo(clientInfo info);
         ~Client();
         bool isLogin() const;
-        int getFd() const;
+        struct pollfd getFd() const;
+
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include "../Parser/Parser.hpp"
 #include "../Command/Command.hpp"
 #include <cstring>
+#include <vector>
 
 bool Server::_terminate = false;
 
@@ -19,12 +20,12 @@ Server::~Server()
 {
     for (size_t i = 0; i < _clients.size(); i++)
     {
-        Logger::Warning("Closing client socket " + Utils::toString(_fds[i].fd));
-        Logger::Warning("Removing client " + Utils::toString(_clients[i]->getFd()));
-        removeClient(_clients[i]->getFd());
+        Logger::Warning("Closing client socket " + Utils::toString(_clients[i]->getFd().fd));
+        Logger::Warning("Removing client " + Utils::toString(_clients[i]->getFd().fd));
+        removeClient(_clients[i]->getFd().fd);
     }
-    Logger::Warning("Closing server socket " + Utils::toString(_socketFd));
-    ::close(_socketFd);
+    Logger::Warning("Closing server socket " + Utils::toString(_socketFd.fd));
+    ::close(_socketFd.fd);
     Logger::Error("Server stopped");
 }
 
@@ -67,9 +68,12 @@ void Server::quit(void)
 
 void Server::init(void)
 {
+    struct pollfd socketPoll;
+    socketPoll.events = POLLIN;
+
     Logger::Info("Initializing server socket");
-    _socketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (_socketFd < 0)
+    socketPoll.fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketPoll.fd < 0)
         throw ServerException::SocketException();
     Logger::Trace("Ipv4, TCP protocol socket initialized");
 
@@ -78,43 +82,52 @@ void Server::init(void)
     _serverAddr.sin_port = htons(_port);
 
     Logger::Trace("Server address initialized");
-    if (bind(_socketFd, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr)) < 0)
+    if (bind(socketPoll.fd, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr)) < 0)
         throw ServerException::BindException();
     Logger::Trace("Server socket binded to port " + Utils::toString(_port) + " successfully");
-    if (::listen(_socketFd, _maxClients) < 0)
+    if (::listen(socketPoll.fd, _maxClients) < 0)
         throw ServerException::ListenException();
     Logger::Info("Server socket initialized on port " + Utils::toString(_port) +
                  " with max clients " + Utils::toString(_maxClients) + " successfully");
-    listen(_socketFd);
+    Logger::Info("Listening to socket " + Utils::toString(socketPoll.fd));
+    _socketFd = socketPoll;
     listen();
 }
 
 void Server::listen(int fd)
 {
-    Logger::Info("Listening to socket " + Utils::toString(fd));
     struct pollfd socketPoll;
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
-    _fds.push_back(socketPoll);
+    Logger::Info("New client connecting");
+    Client *client = new Client(socketPoll);
+    _clients.push_back(client);
+    Logger::Info("New client connected");
+
 }
 
 
-void Server::newClient(int fd, clientInfo info)
+void Server::setClientInfo(int fd, clientInfo info)
 {
-    Logger::Info("New client connecting");
-    Client *client = new Client(fd, info);
-    _clients.push_back(client);
-    Logger::Info("New client connected");
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getFd().fd == fd)
+        {
+            _clients[i]->setInfo(info);
+            break;
+        }
+    }
 }
 
 void Server::close(int fd)
 {
     Logger::Info("Closing client socket " + Utils::toString(fd));
-    for (size_t i = 0; i < _fds.size(); i++)
+    for (size_t i = 0; i < _clients.size(); i++)
     {
-        if (_fds[i].fd == fd)
+        if (_clients[i]->getFd().fd == fd)
         {
-            _fds.erase(_fds.begin() + i);
+            delete _clients[i];
+            _clients.erase(_clients.begin() + i);
             break;
         }
     }
@@ -127,7 +140,7 @@ void Server::removeClient(int fd)
     Logger::Info("Removing client " + Utils::toString(fd));
     for (size_t i = 0; i < _clients.size(); i++)
     {
-        if (_clients[i]->getFd() == fd)
+        if (_clients[i]->getFd().fd == fd)
         {
             delete _clients[i];
             _clients.erase(_clients.begin() + i);
@@ -156,34 +169,49 @@ std::string Server::read(int fd)
 void Server::listen(void)
 {
     Logger::Info("Listening to clients");
+    std::vector<pollfd> pollFds;
+    pollFds.push_back(_socketFd);
+
     while (!_terminate)
     {
-        if (poll(&_fds[0], _fds.size(), 6000) < 0)
+        for (size_t i = 0; i < _clients.size(); ++i)
+            pollFds.push_back(_clients[i]->getFd());
+
+        int pollResult = poll(pollFds.data(), pollFds.size(), 6000);
+        if (pollResult < 0)
         {
             Logger::Error("Polling failed");
             quit();
             break;
         }
-        if (_fds[0].revents == POLLIN)
+
+        if (pollResult == 0)
+        {
+            Logger::Trace("Polling timed out");
+            continue;
+        }
+
+        if (pollFds[0].revents == POLLIN)
         {
             Logger::Trace("New client connecting");
             struct sockaddr_in clientAddr;
             socklen_t clientAddrLen = sizeof(clientAddr);
-            int fd = accept(_socketFd, (struct sockaddr *) &clientAddr, &clientAddrLen);
+            int fd = accept(_socketFd.fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
             if (fd < 0)
                 throw ServerException::AcceptException();
             Logger::Info("New client connected");
             listen(fd);
         }
-        Logger::Info("Reading from clients");
-        for (size_t i = 1; i < _fds.size(); i++)
+
+        for (size_t i = 1; i < pollFds.size(); ++i)
         {
-            if (_fds[i].revents == POLLIN)
+            if (pollFds[i].revents & POLLIN)
             {
-                std::string message = read(_fds[i].fd);
-                Logger::Info("Received message from client " + Utils::toString(_fds[i].fd) + ": " + message);
-                Command::Perform(*this, message, _fds[i].fd);
+                std::string message = read(pollFds[i].fd);
+                Command::Execute(*this, message, pollFds[i].fd);
             }
         }
+        pollFds.clear();
+        pollFds.push_back(_socketFd);
     }
 }

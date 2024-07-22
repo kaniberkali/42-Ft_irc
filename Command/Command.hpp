@@ -14,7 +14,7 @@ class Command
         static std::string JOIN;
         static std::string CAP_LS;
         static std::string getCommand(std::string message);
-        static void Perform(Server &server, std::string message, int fd);
+        static void Execute(Server &server, std::string message, int fd);
         static void execCapLs(Server &server, std::string message, int fd);
         static void execQuit(Server &server, int fd);
 };

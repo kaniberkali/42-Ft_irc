@@ -2,13 +2,14 @@
 NAME = ircserv
 
 SRC = main.cpp \
+	  Utils/Utils.cpp \
 	  Checker/Checker.cpp \
 	  Server/Server.cpp \
 	  Logger/Logger.cpp \
-	  Utils/Utils.cpp \
 	  Parser/Parser.cpp \
 	  Client/Client.cpp \
 	  Command/Command.cpp \
+	  Message/Message.cpp \
 
 OBJ = $(SRC:.cpp=.o)
 

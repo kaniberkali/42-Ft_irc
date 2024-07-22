@@ -21,3 +21,21 @@ std::string Utils::toString(const T& value)
     stringStream << value;
     return stringStream.str();
 }
+
+std::string Utils::trim(const std::string &s)
+{
+    std::string::const_iterator start = s.begin();
+    std::string::const_iterator end = s.end();
+
+    while (start != end && std::isspace(*start))
+        start++;
+
+    if (start == end)
+        return "";
+    do
+    {
+        end--;
+    } while (std::distance(start, end) > 0 && std::isspace(*end));
+
+    return std::string(start, end + 1);
+}

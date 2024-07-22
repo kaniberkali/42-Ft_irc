@@ -27,14 +27,9 @@ class Server
         int _port;
         std::string _password;
         static bool _terminate;
-        int _socketFd;
+        struct pollfd _socketFd;
         struct sockaddr_in _serverAddr;
-        std::vector<struct pollfd> _fds;
         std::vector<Client *> _clients;
-
-        std::vector<std::string> messages;
-
-
     public:
         Server(void);
         Server(int port, std::string password);
@@ -46,7 +41,7 @@ class Server
         void listen(void);
         void listen(int fd);
         void read();
-        void newClient(int fd, clientInfo info);
+        void setClientInfo(int fd, clientInfo info);
         void removeClient(int fd);
         std::string read(int fd);
         void close(int fd);

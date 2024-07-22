@@ -9,6 +9,9 @@ std::string Command::PASS = "PASS";
 std::string Command::USER = "USER";
 std::string Command::CAP_LS = "CAP LS";
 
+// std:: string Command::PRIV_MSG =
+
+
 std::string Command::getCommand(std::string message)
 {
     if (message.rfind(QUIT, 0) == 0)
@@ -29,7 +32,7 @@ std::string Command::getCommand(std::string message)
 void Command::execCapLs(Server &server, std::string message, int fd)
 {
     clientInfo info = Parser::connectionMessage(message);
-    server.newClient(fd, info);
+    server.setClientInfo(fd, info);
 }
 
 void Command::execQuit(Server &server, int fd)
@@ -37,12 +40,14 @@ void Command::execQuit(Server &server, int fd)
     server.removeClient(fd);
 }
 
-void Command::Perform(Server &server, std::string message, int fd)
+void Command::Execute(Server &server, std::string message, int fd)
 {
     std::string command = Command::getCommand(message);
-    Logger::Debug(command);
     if (command == Command::CAP_LS)
         execCapLs(server, message, fd);
+    // else if (command == Command::PRIVMSG)
+        // execPrivMsg();
+
     else if (command == Command::QUIT)
         execQuit(server, fd);
 }

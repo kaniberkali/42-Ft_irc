@@ -1,5 +1,8 @@
 #include "Parser.hpp"
 #include "../Logger/Logger.hpp"
+#include <sstream>
+#include "../Utils/Utils.hpp"
+
 
 clientInfo Parser::connectionMessage(std::string message)
 {
@@ -22,5 +25,9 @@ clientInfo Parser::connectionMessage(std::string message)
     }
     if (!info.realName.empty() && info.realName[0] == ' ')
         info.realName.erase(0, 1);
+    info.realName = Utils::trim(info.realName);
+    info.userName = Utils::trim(info.userName);
+    info.nickName = Utils::trim(info.nickName);
+    info.password = Utils::trim(info.password);
     return info;
 }
