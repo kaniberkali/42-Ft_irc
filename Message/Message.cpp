@@ -18,3 +18,12 @@ void Message::send(int fd, std::string message)
     else
         Logger::Info("Message sended");
 }
+
+void Message::send(Channel *channel, Client *client, std::string message)
+{
+    Logger::Debug(message);
+    std::vector<Client *> clients = channel->getClients();
+    for (size_t i = 0; i < clients.size(); i++)
+        if (clients[i]->getNickName() != client->getNickName())
+            send(clients[i]->getFd().fd, message);
+}

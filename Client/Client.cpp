@@ -19,9 +19,8 @@ void Client::setInfo(clientInfo info)
     _nickName = info.nickName;
     _password = info.password;
     Logger::Info(_realName + " connected to the server with the name " + _nickName);
-    Message::send(_fd.fd, "NICK " + _nickName + "\r\n");
-    Message::send(_fd.fd, "USER " + _realName + " 0 * :" + _userName + "\r\n");
-    Message::send(_fd.fd, "JOIN #test\r\n");
+   // std::string message = ":kaniberkali PRIVMSG " + _nickName +" :Deneme\r\n";
+   // Message::send(4, message);
 }
 
 bool Client::isLogin() const
@@ -34,4 +33,27 @@ struct pollfd Client::getFd() const
     return _fd;
 }
 
+std::string Client::getNickName()
+{
+    return _nickName;
+}
 
+std::string Client::getUserName()
+{
+    return _userName;
+}
+
+std::string Client::getHostName()
+{
+    return _hostName;
+}
+
+std::string Client::getServerName()
+{
+    return _serverName;
+}
+
+std::string Client::getRealName()
+{
+    return _realName;
+}

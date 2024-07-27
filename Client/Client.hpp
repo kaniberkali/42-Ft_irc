@@ -21,6 +21,11 @@ class Client
         ~Client();
         bool isLogin() const;
         struct pollfd getFd() const;
+        std::string  getNickName();
+        std::string  getUserName();
+        std::string  getHostName();
+        std::string  getServerName();
+        std::string  getRealName();
 
 };
 

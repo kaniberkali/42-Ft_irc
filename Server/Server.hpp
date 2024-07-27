@@ -19,6 +19,7 @@
 #include <vector>
 #include <poll.h>
 #include "../Client/Client.hpp"
+#include "../Channel/Channel.hpp"
 
 class Server
 {
@@ -30,6 +31,7 @@ class Server
         struct pollfd _socketFd;
         struct sockaddr_in _serverAddr;
         std::vector<Client *> _clients;
+        std::vector<Channel *> _channels;
     public:
         Server(void);
         Server(int port, std::string password);
@@ -45,6 +47,10 @@ class Server
         void removeClient(int fd);
         std::string read(int fd);
         void close(int fd);
+        Client *getClient(int fd);
+        Client *getClientByNickName(std::string nickname);
+        void addChannel(Channel *channel);
+        Channel *getChannel(std::string name);
 };
 
 

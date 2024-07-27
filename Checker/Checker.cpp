@@ -15,7 +15,6 @@ int Checker::port(std::string port)
     int portNum = atoi(port.c_str());
     if (portNum < MIN_PORT || portNum > MAX_PORT)
         throw ServerException::PortRangeException();
-
     return portNum;
 }
 

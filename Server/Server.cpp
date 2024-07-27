@@ -106,7 +106,6 @@ void Server::listen(int fd)
 
 }
 
-
 void Server::setClientInfo(int fd, clientInfo info)
 {
     for (size_t i = 0; i < _clients.size(); i++)
@@ -163,19 +162,22 @@ std::string Server::read(int fd)
         throw ServerException::ReadException();
     }
     Logger::Trace("Read " + Utils::toString(readSize) + " bytes from client socket " + Utils::toString(fd));
+    Logger::Debug(std::string(buffer, readSize));
     return std::string(buffer, readSize);
 }
 
 void Server::listen(void)
 {
+    int lastClientSize = 0;
     Logger::Info("Listening to clients");
     std::vector<pollfd> pollFds;
     pollFds.push_back(_socketFd);
 
     while (!_terminate)
     {
-        for (size_t i = 0; i < _clients.size(); ++i)
+        for (size_t i = lastClientSize; i < _clients.size(); i++)
             pollFds.push_back(_clients[i]->getFd());
+        lastClientSize = _clients.size();
 
         int pollResult = poll(pollFds.data(), pollFds.size(), 6000);
         if (pollResult < 0)
@@ -187,7 +189,7 @@ void Server::listen(void)
 
         if (pollResult == 0)
         {
-            Logger::Trace("Polling timed out");
+            Logger::Trace("Server waiting for requests");
             continue;
         }
 
@@ -203,7 +205,7 @@ void Server::listen(void)
             listen(fd);
         }
 
-        for (size_t i = 1; i < pollFds.size(); ++i)
+        for (size_t i = 1; i < pollFds.size(); i++)
         {
             if (pollFds[i].revents & POLLIN)
             {
@@ -211,7 +213,40 @@ void Server::listen(void)
                 Command::Execute(*this, message, pollFds[i].fd);
             }
         }
-        pollFds.clear();
-        pollFds.push_back(_socketFd);
     }
+}
+
+Client* Server::getClient(int fd)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getFd().fd == fd)
+            return _clients[i];
+    }
+    return NULL;
+}
+
+Client* Server::getClientByNickName(std::string nickname)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getNickName() == nickname)
+            return _clients[i];
+    }
+    return NULL;
+}
+
+void Server::addChannel(Channel *channel)
+{
+    _channels.push_back(channel);
+}
+
+Channel* Server::getChannel(std::string name)
+{
+    for (size_t i = 0; i < _channels.size(); i++)
+    {
+        if (_channels[i]->getName() == name)
+            return _channels[i];
+    }
+    return NULL;
 }

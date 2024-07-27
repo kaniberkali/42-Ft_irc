@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 class Utils
 {
@@ -14,6 +15,8 @@ class Utils
 
         template <typename T>
         static std::string toString(const T& value);
+
+        static std::vector<std::string> split(const std::string &s, char delim);
 };
 
 

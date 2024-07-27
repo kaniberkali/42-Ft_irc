@@ -11,10 +11,25 @@ struct clientInfo {
     std::string realName;
 };
 
+struct reciveMessage
+{
+    std::string target;
+    std::string message;
+};
+
+struct parseInfo
+{
+    std::string command;
+    std::string function;
+    std::string value;
+};
+
 class Parser
 {
     public:
         static clientInfo connectionMessage(std::string message);
+        static reciveMessage privateMessage(std::string message);
+        static parseInfo parse(std::string  message);
 };
 
 #endif
