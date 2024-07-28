@@ -2,6 +2,7 @@
 # define SERVEREXCEPTION_HPP
 
 #include <iostream>
+#include "../Logger/Logger.hpp"
 
 # define INVALID_PORT_RANGE "Port number is out of range"
 # define PORT_NOT_DIGIT "Port number has to be include digit number"
@@ -10,6 +11,7 @@
 # define SOCKET_NOT_ACCEPT "Socket not accept"
 # define SOCKET_LISTEN_EXCEPTION "Listen process didn't work for socket fd"
 # define SOCKET_READ_EXCEPTION "Read process didn't work for socket fd"
+
 
 class ServerException : public std::exception {
     private:
@@ -22,10 +24,15 @@ class ServerException : public std::exception {
         class AcceptException;
         class ListenException;
         class ReadException;
-        ServerException(const std::string& msg = "") : _message(msg) {}
+        class InvalidPasswordException;
+        ServerException(std::string msg) : _message(msg) {
+            Logger::Error(_message);
+        }
         virtual ~ServerException() throw() {}
         virtual const char* what() const throw() { return _message.c_str(); }
 };
+
+
 
 class ServerException::PortRangeException : public ServerException {
 public:

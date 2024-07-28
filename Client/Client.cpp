@@ -58,3 +58,8 @@ std::string Client::getRealName()
 {
     return _realName;
 }
+
+void Client::setNickName(std::string nickName)
+{
+    _nickName = nickName;
+}

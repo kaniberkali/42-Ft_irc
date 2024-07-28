@@ -2,6 +2,7 @@
 #include "../Parser/Parser.hpp"
 #include "../Logger/Logger.hpp"
 #include "../Message/Message.hpp"
+#include "../Exception/ClientException.hpp"
 
 std::string Command::QUIT = "QUIT";
 std::string Command::JOIN = "JOIN";
@@ -9,6 +10,7 @@ std::string Command::CAP_LS = "CAP LS";
 std::string Command::PRIVMSG = "PRIVMSG";
 std::string Command::PART = "PART";
 std::string Command::WHO = "WHO";
+std::string Command::NICK = "NICK";
 
 std::string Command::getCommand(std::string message)
 {
@@ -24,13 +26,22 @@ std::string Command::getCommand(std::string message)
         return (PART);
     else if (message.rfind(WHO,0) == 0)
         return (WHO);
+    else if (message.rfind(NICK,0) == 0)
+        return (NICK);
     return ("");
 }
 
 void Command::execCapLs(Server &server, std::string message, int fd)
 {
     clientInfo info = Parser::connectionMessage(message);
-    server.setClientInfo(fd, info);
+    try {
+        server.setClientInfo(fd, info);
+    }
+    catch (ClientException::PasswordMismatchException &e)
+    {
+        Message::send(fd, ":"+ server.getName() +" 464 "+ info.nickName +" :Password incorrect\r\n");
+        server.removeClient(fd);
+    }
 }
 
 void Command::execQuit(Server &server, int fd)
@@ -40,7 +51,6 @@ void Command::execQuit(Server &server, int fd)
 
 void Command::execJoin(Server &server, std::string message, int fd)
 {
-
     std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
     Logger::Info(sender + " join to " + info.function);
@@ -136,19 +146,26 @@ void Command::execWho(Server &server, std::string message, int fd)
             Message::send(client->getFd().fd, ":" + server.getName() + " 324 " + client->getNickName() + " " +
                               channel->getName() + "+n \r\n");
             for (size_t q = 0; q < clients.size(); q++)
-            {
                 Message::send(client->getFd().fd, ":" + server.getName() + " 352 " + client->getNickName() + " " +
                                   channel->getName() + " " + clients[q]->getUserName() + " " + clients[q]->getHostName() + " " + server.getName() + " " + clients[q]->getNickName() + " H :0 " + clients[q]->getRealName() + "\r\n");
-            }
             Message::send(client->getFd().fd, ":" + server.getName() + " 315 " + client->getNickName() + " " + channel->getName() + " :End of /WHO list\r\n");
-
         }
-
     }
     else
     {
         Message::send(fd, ":" + server.getName() + " 366 * :End of WHO list\r\n");
     }
+}
+
+void Command::execNick(Server &server, std::string message, int fd)
+{
+    std::string sender = server.getClient(fd)->getNickName();
+    parseInfo info = Parser::parse(message);
+    Message::send(fd, ":" + sender + " NICK " + info.function + "\r\n");
+    Logger::Info(sender + " changed nickname to " + info.function);
+    server.getClient(fd)->setNickName(info.function);
+    execWho(server, message, fd);
+    //BURASI DEGİSTİRİLECEK. burasi değitirilecek.
 }
 
 void Command::Execute(Server &server, std::string message, int fd)
@@ -166,4 +183,6 @@ void Command::Execute(Server &server, std::string message, int fd)
         execPart(server, message , fd);
     else if (command == Command::WHO)
         execWho(server, message, fd);
+    else if (command == Command::NICK)
+        execNick(server, message, fd);
 }

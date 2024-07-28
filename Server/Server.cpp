@@ -2,9 +2,11 @@
 #include "../Logger/Logger.hpp"
 #include "../Utils/Utils.hpp"
 #include <csignal>
+#include "../Exception/ClientException.hpp"
 #include "../Exception/ServerException.hpp"
 #include "../Parser/Parser.hpp"
 #include "../Command/Command.hpp"
+#include "../Message/Message.hpp"
 #include <cstring>
 #include <vector>
 #include <netdb.h>
@@ -111,6 +113,8 @@ void Server::listen(int fd, std::string hostName)
 
 void Server::setClientInfo(int fd, clientInfo info)
 {
+    if (info.password != _password)
+        throw ClientException::PasswordMismatchException() ;
     for (size_t i = 0; i < _clients.size(); i++)
     {
         if (_clients[i]->getFd().fd == fd)
@@ -160,10 +164,7 @@ std::string Server::read(int fd)
     Logger::Trace("Reading from client socket " + Utils::toString(fd));
     int readSize = recv(fd, buffer, BUFFER_SIZE, 0);
     if (readSize < 0)
-    {
-        Logger::Error("Failed to read from client socket " + Utils::toString(fd));
         throw ServerException::ReadException();
-    }
     Logger::Trace("Read " + Utils::toString(readSize) + " bytes from client socket " + Utils::toString(fd));
     Logger::Debug(std::string(buffer, readSize));
     return std::string(buffer, readSize);
@@ -214,8 +215,11 @@ void Server::listen(void)
         {
             if (pollFds[i].revents & POLLIN)
             {
-                std::string message = read(pollFds[i].fd);
-                Command::Execute(*this, message, pollFds[i].fd);
+                try
+                {
+                    std::string message = read(pollFds[i].fd);
+                    Command::Execute(*this, message, pollFds[i].fd);
+                } catch (ServerException::ReadException &e) {}
             }
         }
     }

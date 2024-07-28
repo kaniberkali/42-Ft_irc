@@ -28,6 +28,8 @@ class Client
         std::string  getServerName();
         std::string  getRealName();
 
+        void setNickName(std::string nickName);
+
 };
 
 #endif
