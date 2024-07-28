@@ -1,10 +1,11 @@
 #include "Client.hpp"
 #include "../Logger/Logger.hpp"
 #include "../Message/Message.hpp"
+#include <netdb.h>
 
-Client::Client(struct pollfd fd) : _fd(fd), _login(false)
+Client::Client(struct pollfd fd, std::string hostName) : _fd(fd), _login(false), _hostName(hostName)
 {
-
+    Logger::Info("Client connected from " + _hostName);
 }
 
 Client::~Client()

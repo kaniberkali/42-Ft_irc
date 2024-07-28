@@ -3,6 +3,7 @@
 
 #include <poll.h>
 #include "../Parser/Parser.hpp"
+#include <netdb.h>
 
 class Client
 {
@@ -16,7 +17,7 @@ class Client
         std::string _nickName;
         std::string _password;
     public:
-        Client(struct pollfd fd);
+        Client(struct pollfd fd, std::string hostName);
         void setInfo(clientInfo info);
         ~Client();
         bool isLogin() const;

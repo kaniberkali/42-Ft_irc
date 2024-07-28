@@ -6,6 +6,8 @@
 
 # define DEFAULT_PORT 6667
 # define DEFAULT_PASSWORD "1111"
+# define DEFAULT_NAME "irc.ft_messenger.net"
+# define DEFAULT_VERSION "ft_messenger-v1.0.0"
 
 # define EXIT 1
 # define SUCCESS 0
@@ -32,6 +34,8 @@ class Server
         struct sockaddr_in _serverAddr;
         std::vector<Client *> _clients;
         std::vector<Channel *> _channels;
+        std::string _name;
+        std::string _version;
     public:
         Server(void);
         Server(int port, std::string password);
@@ -41,7 +45,7 @@ class Server
         static void quit(void);
         void init(void);
         void listen(void);
-        void listen(int fd);
+        void listen(int fd, std::string hostName);
         void read();
         void setClientInfo(int fd, clientInfo info);
         void removeClient(int fd);
@@ -51,6 +55,7 @@ class Server
         Client *getClientByNickName(std::string nickname);
         void addChannel(Channel *channel);
         Channel *getChannel(std::string name);
+        std::string getName();
 };
 
 

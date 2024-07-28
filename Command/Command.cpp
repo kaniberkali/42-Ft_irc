@@ -40,6 +40,7 @@ void Command::execQuit(Server &server, int fd)
 
 void Command::execJoin(Server &server, std::string message, int fd)
 {
+
     std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
     Logger::Info(sender + " join to " + info.function);
@@ -47,7 +48,12 @@ void Command::execJoin(Server &server, std::string message, int fd)
     if (channel != NULL)
     {
         channel->addClient(server.getClient(fd));
-        Message::send(fd, ":" + sender + " JOIN " + info.function + "\r\n");
+        std::vector<Client *>clients = channel->getClients();
+        for (size_t i = 0; i < channel->getClients().size(); i++)
+        {
+            int targetFd = clients[i]->getFd().fd;
+            Message::send(targetFd, ":" + sender + " JOIN " + info.function + "\r\n");
+        }
     }
     else
     {
@@ -56,7 +62,6 @@ void Command::execJoin(Server &server, std::string message, int fd)
         server.addChannel(newChannel);
         Message::send(fd, ":" + sender + " JOIN " + info.function + "\r\n");
     }
-
 }
 
 void Command::execPrivMsg(Server &server, std::string message, int fd)
@@ -95,8 +100,13 @@ void Command::execPart(Server &server, std::string message, int fd)
     Channel* channel = server.getChannel(info.function);
     if (channel != NULL)
     {
+        std::vector<Client *> clients = channel->getClients();
+        for (size_t i = 0; i < clients.size(); i++)
+        {
+            int targetFd = clients[i]->getFd().fd;
+            Message::send(targetFd, ":" + sender + " PART " + info.function + "\r\n");
+        }
         channel->removeClient(server.getClient(fd));
-        Message::send(fd, ":" + sender + " PART " + info.function + "\r\n");
     }
     else
         Logger::Error("Channel " + info.function + " not found.");
@@ -104,23 +114,42 @@ void Command::execPart(Server &server, std::string message, int fd)
 
 void Command::execWho(Server &server, std::string message, int fd)
 {
-    std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
-    Logger::Info(sender + " who to " + info.function);
     Channel *channel = server.getChannel(info.function);
-    Client *client = server.getClient(fd);
+
     if (channel != NULL)
     {
         std::vector<Client*> clients = channel->getClients();
+        std::string clientNames = "@";
         for (size_t i = 0; i < clients.size(); i++) {
-            Message::send(fd, "352 " + client->getNickName() + " " + info.function + " " + clients[i]->getUserName() + " " + clients[i]->getHostName() + " " + clients[i]->getServerName() + " " + clients[i]->getNickName() + " H :0 " + clients[i]->getRealName() + "\r\n");
+            clientNames += clients[i]->getNickName();
+            if (i != clients.size() - 1)
+                clientNames += " ";
         }
-        Message::send(fd, "315 " + client->getNickName() + " " + info.function + " :End of WHO list\r\n");
+        for (size_t i = 0; i < clients.size(); i++)
+        {
+            Client *client = clients[i];
+            Message::send(client->getFd().fd, ":" + server.getName() + " 353 " + client->getNickName() + " = " +
+                              channel->getName() + " : " + clientNames + "\r\n");
+            Message::send(client->getFd().fd, ":" + server.getName() + " 366 " + client->getNickName() + " " +
+                              channel->getName() + " :End of /NAMES list\r\n");
+            Message::send(client->getFd().fd, ":" + server.getName() + " 324 " + client->getNickName() + " " +
+                              channel->getName() + "+n \r\n");
+            for (size_t q = 0; q < clients.size(); q++)
+            {
+                Message::send(client->getFd().fd, ":" + server.getName() + " 352 " + client->getNickName() + " " +
+                                  channel->getName() + " " + clients[q]->getUserName() + " " + clients[q]->getHostName() + " " + server.getName() + " " + clients[q]->getNickName() + " H :0 " + clients[q]->getRealName() + "\r\n");
+            }
+            Message::send(client->getFd().fd, ":" + server.getName() + " 315 " + client->getNickName() + " " + channel->getName() + " :End of /WHO list\r\n");
+
+        }
+
     }
     else
-        Logger::Error("Channel " + info.function + " not found.");
+    {
+        Message::send(fd, ":" + server.getName() + " 366 * :End of WHO list\r\n");
+    }
 }
-
 
 void Command::Execute(Server &server, std::string message, int fd)
 {
@@ -137,5 +166,4 @@ void Command::Execute(Server &server, std::string message, int fd)
         execPart(server, message , fd);
     else if (command == Command::WHO)
         execWho(server, message, fd);
-
 }

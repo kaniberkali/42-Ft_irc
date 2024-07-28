@@ -7,6 +7,7 @@
 #include "../Command/Command.hpp"
 #include <cstring>
 #include <vector>
+#include <netdb.h>
 
 bool Server::_terminate = false;
 
@@ -39,6 +40,8 @@ Server::Server(int port, std::string password) : _port(port), _password(password
 {
     this->_maxClients = MAX_CLIENTS;
     this->_terminate = false;
+    this->_name = DEFAULT_NAME;
+    this->_version = DEFAULT_VERSION;
     Logger::Info("Server starting on port " + Utils::toString(port) + " with password " + password);
     signal(SIGQUIT, &signalHandler);
     Logger::Trace("Signal QUIT handled");
@@ -94,13 +97,13 @@ void Server::init(void)
     listen();
 }
 
-void Server::listen(int fd)
+void Server::listen(int fd, std::string hostName)
 {
     struct pollfd socketPoll;
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     Logger::Info("New client connecting");
-    Client *client = new Client(socketPoll);
+    Client *client = new Client(socketPoll, hostName);
     _clients.push_back(client);
     Logger::Info("New client connected");
 
@@ -202,7 +205,9 @@ void Server::listen(void)
             if (fd < 0)
                 throw ServerException::AcceptException();
             Logger::Info("New client connected");
-            listen(fd);
+            char hostName[NI_MAXHOST];
+            getnameinfo((struct sockaddr*)&clientAddr, clientAddrLen, hostName, NI_MAXHOST, NULL, 0, 0);
+            listen(fd, hostName);
         }
 
         for (size_t i = 1; i < pollFds.size(); i++)
@@ -249,4 +254,9 @@ Channel* Server::getChannel(std::string name)
             return _channels[i];
     }
     return NULL;
+}
+
+std::string Server::getName()
+{
+    return _name;
 }
