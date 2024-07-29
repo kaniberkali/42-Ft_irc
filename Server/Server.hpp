@@ -18,6 +18,8 @@
 # define MAX_CLIENTS 44
 # define BUFFER_SIZE 512
 
+# define TIME_OUT 0
+
 #include <vector>
 #include <poll.h>
 #include "../Client/Client.hpp"
@@ -56,6 +58,8 @@ class Server
         void addChannel(Channel *channel);
         Channel *getChannel(std::string name);
         std::string getName();
+        std::size_t ChannelsSize();
+        Channel* getChannelIndex(int index);
 };
 
 

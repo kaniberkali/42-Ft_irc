@@ -11,6 +11,8 @@
 #include <vector>
 #include <netdb.h>
 
+
+
 bool Server::_terminate = false;
 
 Server::Server()
@@ -183,7 +185,7 @@ void Server::listen(void)
             pollFds.push_back(_clients[i]->getFd());
         lastClientSize = _clients.size();
 
-        int pollResult = poll(pollFds.data(), pollFds.size(), 6000);
+        int pollResult = poll(pollFds.data(), pollFds.size(), TIME_OUT);
         if (pollResult < 0)
         {
             Logger::Error("Polling failed");
@@ -193,7 +195,7 @@ void Server::listen(void)
 
         if (pollResult == 0)
         {
-            Logger::Trace("Server waiting for requests");
+            // Logger::Trace("Server waiting for requests");
             continue;
         }
 
@@ -263,4 +265,14 @@ Channel* Server::getChannel(std::string name)
 std::string Server::getName()
 {
     return _name;
+}
+
+std::size_t Server::ChannelsSize()
+{ 
+    return _channels.size();
+}
+
+Channel *Server::getChannelIndex(int index)
+{
+    return _channels[index];
 }

@@ -3,6 +3,8 @@
 #include "../Logger/Logger.hpp"
 #include "../Message/Message.hpp"
 #include "../Exception/ClientException.hpp"
+#include "../Server/Server.hpp"
+#include "../Channel/Channel.hpp"
 
 std::string Command::QUIT = "QUIT";
 std::string Command::JOIN = "JOIN";
@@ -159,14 +161,35 @@ void Command::execWho(Server &server, std::string message, int fd)
 
 void Command::execNick(Server &server, std::string message, int fd)
 {
+    // for myself 
     std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
     Message::send(fd, ":" + sender + " NICK " + info.function + "\r\n");
     Logger::Info(sender + " changed nickname to " + info.function);
     server.getClient(fd)->setNickName(info.function);
+    // execWho(server, message, fd);
+    
+    // for other clients
+    for (size_t i = 0; i < server.ChannelsSize(); i++)
+    {
+        Channel *channel = server.getChannel(server.getChannelIndex(i)->getName());
+        std::vector<Client *> clients = channel->getClients();
+        for (size_t j = 0; j < clients.size(); j++)
+        {
+            int targetFd = clients[j]->getFd().fd;
+            if (targetFd != fd)
+            { 
+                Message::send(targetFd, ":" + sender + " NICK " + info.function + "\r\n");
+                Logger::Info(sender + " changed nickname to " + info.function);
+                // execWho(server, message, fd);
+            }
+        }
+    }
+
     execWho(server, message, fd);
-    //BURASI DEGİSTİRİLECEK. burasi değitirilecek.
 }
+
+
 
 void Command::Execute(Server &server, std::string message, int fd)
 {
