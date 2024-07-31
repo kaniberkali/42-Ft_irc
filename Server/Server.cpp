@@ -46,6 +46,7 @@ Server::Server(int port, std::string password) : _port(port), _password(password
     this->_terminate = false;
     this->_name = DEFAULT_NAME;
     this->_version = DEFAULT_VERSION;
+    this->_createdDate = Utils::time("d M Y H:i:s z");
     Logger::Info("Server starting on port " + Utils::toString(port) + " with password " + password);
     signal(SIGQUIT, &signalHandler);
     Logger::Trace("Signal QUIT handled");
@@ -275,7 +276,7 @@ std::vector<Client *> Server::getClients()
 
 std::string Server::getCreateDate()
 {
-    return Utils::time();
+    return _createdDate;
 }
 
 serverInfo Server::getInfo()

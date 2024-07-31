@@ -155,7 +155,10 @@ void Command::execNick(Server &server, std::string message, int fd)
     std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
     Message::send(fd, ":" + sender + " NICK " + info.function + "\r\n");
-    Logger::Info(sender + " changed nickname to " + info.function);
+    if (sender.length() == 0)
+        Logger::Info("Set nickname to " + info.function);
+    else
+        Logger::Info(sender + " changed nickname to " + info.function);
     server.getClient(fd)->setNickName(info.function);
 
     std::vector<Client *> clients = server.getClients();
@@ -163,10 +166,7 @@ void Command::execNick(Server &server, std::string message, int fd)
     {
         int targetFd = clients[i]->getFd().fd;
         if (targetFd != fd)
-        {
             Message::send(targetFd, ":" + sender + " NICK " + info.function + "\r\n");
-            Logger::Info(sender + " changed nickname to " + info.function);
-        }
     }
 }
 
