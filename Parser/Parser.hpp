@@ -4,11 +4,19 @@
 #include <string>
 #include <sstream>
 
-struct clientInfo {
-    std::string userName;
-    std::string password;
+struct userInfo {
     std::string nickName;
+    std::string password;
+    std::string userName;
     std::string realName;
+};
+
+struct serverInfo
+{
+    std::string name;
+    std::string password;
+    std::string version;
+    std::string createDate;
 };
 
 struct reciveMessage
@@ -27,9 +35,9 @@ struct parseInfo
 class Parser
 {
     public:
-        static clientInfo connectionMessage(std::string message);
         static reciveMessage privateMessage(std::string message);
         static parseInfo parse(std::string  message);
+        static userInfo userParse(std::string message);
 };
 
 #endif

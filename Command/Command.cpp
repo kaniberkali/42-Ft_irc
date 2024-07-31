@@ -5,14 +5,16 @@
 #include "../Exception/ClientException.hpp"
 #include "../Server/Server.hpp"
 #include "../Channel/Channel.hpp"
+#include "../Utils/Utils.hpp"
 
 std::string Command::QUIT = "QUIT";
 std::string Command::JOIN = "JOIN";
-std::string Command::CAP_LS = "CAP LS";
 std::string Command::PRIVMSG = "PRIVMSG";
 std::string Command::PART = "PART";
 std::string Command::WHO = "WHO";
 std::string Command::NICK = "NICK";
+std::string Command::USER = "USER";
+std::string Command::PASS = "PASS";
 
 std::string Command::getCommand(std::string message)
 {
@@ -20,8 +22,6 @@ std::string Command::getCommand(std::string message)
         return (QUIT);
     else if (message.rfind(JOIN, 0) == 0)
         return (JOIN);
-    else if (message.rfind(CAP_LS, 0) == 0)
-        return (CAP_LS);
     else if (message.rfind(PRIVMSG, 0) == 0)
         return (PRIVMSG);
     else if (message.rfind(PART , 0) == 0)
@@ -30,20 +30,11 @@ std::string Command::getCommand(std::string message)
         return (WHO);
     else if (message.rfind(NICK,0) == 0)
         return (NICK);
-    return ("");
-}
-
-void Command::execCapLs(Server &server, std::string message, int fd)
-{
-    clientInfo info = Parser::connectionMessage(message);
-    try {
-        server.setClientInfo(fd, info);
-    }
-    catch (ClientException::PasswordMismatchException &e)
-    {
-        Message::send(fd, ":"+ server.getName() +" 464 "+ info.nickName +" :Password incorrect\r\n");
-        server.removeClient(fd);
-    }
+    else if (message.rfind(USER,0) == 0)
+        return (USER);
+    if (message.find(" ") != std::string::npos)
+        return (Utils::split(message, " ")[0]);
+    return (message);
 }
 
 void Command::execQuit(Server &server, int fd)
@@ -161,51 +152,85 @@ void Command::execWho(Server &server, std::string message, int fd)
 
 void Command::execNick(Server &server, std::string message, int fd)
 {
-    // for myself 
     std::string sender = server.getClient(fd)->getNickName();
     parseInfo info = Parser::parse(message);
     Message::send(fd, ":" + sender + " NICK " + info.function + "\r\n");
     Logger::Info(sender + " changed nickname to " + info.function);
     server.getClient(fd)->setNickName(info.function);
-    // execWho(server, message, fd);
-    
-    // for other clients
-    for (size_t i = 0; i < server.ChannelsSize(); i++)
+
+    std::vector<Client *> clients = server.getClients();
+    for (size_t i = 0; i < clients.size(); i++)
     {
-        Channel *channel = server.getChannel(server.getChannelIndex(i)->getName());
-        std::vector<Client *> clients = channel->getClients();
-        for (size_t j = 0; j < clients.size(); j++)
+        int targetFd = clients[i]->getFd().fd;
+        if (targetFd != fd)
         {
-            int targetFd = clients[j]->getFd().fd;
-            if (targetFd != fd)
-            { 
-                Message::send(targetFd, ":" + sender + " NICK " + info.function + "\r\n");
-                Logger::Info(sender + " changed nickname to " + info.function);
-                // execWho(server, message, fd);
-            }
+            Message::send(targetFd, ":" + sender + " NICK " + info.function + "\r\n");
+            Logger::Info(sender + " changed nickname to " + info.function);
         }
     }
-
-    execWho(server, message, fd);
 }
 
+void Command::execPass(Server &server, std::string message, int fd)
+{
+    parseInfo parse = Parser::parse(message);
 
+    Client *client = server.getClient(fd);
+    Logger::Debug(parse.function);
+    client->setPassword(parse.function);
+}
+
+void Command::execUser(Server &server, std::string message, int fd)
+{
+    userInfo userInfo = Parser::userParse(message);
+    serverInfo serverInfo = server.getInfo();
+
+    Client *client = server.getClient(fd);
+    client->setUserName(userInfo.userName);
+    client->setRealName(userInfo.realName);
+
+    userInfo.realName = client->getRealName();
+    userInfo.userName = client->getUserName();
+    userInfo.nickName = client->getNickName();
+    userInfo.password = client->getPassword();
+    try
+    {
+        client->login(serverInfo, userInfo);
+    }
+    catch (ClientException &e)
+    {
+        Message::send(fd, ":" + serverInfo.name + " 464 * :Password incorrect\r\n");
+        server.removeClient(fd);
+    }
+}
 
 void Command::Execute(Server &server, std::string message, int fd)
 {
+    std::vector<std::string> words = Utils::split(message, "\r\n");
+    for (size_t i = 0; i < words.size(); ++i) {
+        if (words.size() == 1 || words[i].empty())
+            break;
+        Execute(server, words[i], fd);
+        Logger::Info("Command Detected: " + words[i]);
+    }
     std::string command = Command::getCommand(message);
-    if (command == Command::CAP_LS)
-        execCapLs(server, message, fd);
-    else if (command == Command::QUIT)
-        execQuit(server, fd);
-    else if (command == Command::PRIVMSG)
-        execPrivMsg(server, message, fd);
-    else if (command == Command::JOIN)
-        execJoin(server,message, fd);
-    else if (command == Command::PART)
-        execPart(server, message , fd);
-    else if (command == Command::WHO)
-        execWho(server, message, fd);
-    else if (command == Command::NICK)
-        execNick(server, message, fd);
+    if (words.size() == 1) {
+        if (command == Command::QUIT)
+            execQuit(server, fd);
+        else if (command == Command::PRIVMSG)
+            execPrivMsg(server, message, fd);
+        else if (command == Command::JOIN)
+            execJoin(server, message, fd);
+        else if (command == Command::PART)
+            execPart(server, message, fd);
+        else if (command == Command::WHO)
+            execWho(server, message, fd);
+        else if (command == Command::NICK)
+            execNick(server, message, fd);
+        else if (command == Command::USER)
+            execUser(server, message, fd);
+        else if (command == Command::PASS)
+            execPass(server, message, fd);
+        else
+            Message::send(fd, server.getName() + " 421 * " + command + " :Unknown command\r\n");
+    }
 }

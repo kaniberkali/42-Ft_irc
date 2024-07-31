@@ -18,17 +18,21 @@ class Client
         std::string _password;
     public:
         Client(struct pollfd fd, std::string hostName);
-        void setInfo(clientInfo info);
         ~Client();
         bool isLogin() const;
         struct pollfd getFd() const;
-        std::string  getNickName();
-        std::string  getUserName();
-        std::string  getHostName();
-        std::string  getServerName();
-        std::string  getRealName();
+        void login(serverInfo server, userInfo info);
+        std::string getNickName();
+        std::string getUserName();
+        std::string getHostName();
+        std::string getServerName();
+        std::string getRealName();
+        std::string getPassword();
 
         void setNickName(std::string nickName);
+        void setPassword(std::string name);
+        void setUserName(std::string name);
+        void setRealName(std::string name);
 
 };
 

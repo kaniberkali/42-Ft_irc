@@ -113,20 +113,6 @@ void Server::listen(int fd, std::string hostName)
 
 }
 
-void Server::setClientInfo(int fd, clientInfo info)
-{
-    if (info.password != _password)
-        throw ClientException::PasswordMismatchException() ;
-    for (size_t i = 0; i < _clients.size(); i++)
-    {
-        if (_clients[i]->getFd().fd == fd)
-        {
-            _clients[i]->setInfo(info);
-            break;
-        }
-    }
-}
-
 void Server::close(int fd)
 {
     Logger::Info("Closing client socket " + Utils::toString(fd));
@@ -267,12 +253,37 @@ std::string Server::getName()
     return _name;
 }
 
-std::size_t Server::ChannelsSize()
-{ 
-    return _channels.size();
+std::string Server::getVersion()
+{
+    return _version;
 }
 
-Channel *Server::getChannelIndex(int index)
+Channel *Server::getChannel(int index)
 {
     return _channels[index];
+}
+
+std::vector<Channel *> Server::getChannels()
+{
+    return _channels;
+}
+
+std::vector<Client *> Server::getClients()
+{
+    return _clients;
+}
+
+std::string Server::getCreateDate()
+{
+    return Utils::time();
+}
+
+serverInfo Server::getInfo()
+{
+    serverInfo info;
+    info.name = _name;
+    info.password = _password;
+    info.version = _version;
+    info.createDate = _createdDate;
+    return info;
 }
