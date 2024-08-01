@@ -6,6 +6,7 @@
 #include "../Server/Server.hpp"
 #include "../Channel/Channel.hpp"
 #include "../Utils/Utils.hpp"
+#include "../Mode/Mode.hpp"
 
 std::string Command::QUIT = "QUIT";
 std::string Command::JOIN = "JOIN";
@@ -15,6 +16,8 @@ std::string Command::WHO = "WHO";
 std::string Command::NICK = "NICK";
 std::string Command::USER = "USER";
 std::string Command::PASS = "PASS";
+std::string Command::NOTICE = "NOTICE";
+std::string Command::MODE = "MODE";
 
 std::string Command::getCommand(std::string message)
 {
@@ -32,6 +35,10 @@ std::string Command::getCommand(std::string message)
         return (NICK);
     else if (message.rfind(USER,0) == 0)
         return (USER);
+    else if (message.rfind(NOTICE, 0) == 0)
+        return (NOTICE);
+    else if (message.rfind(MODE,0) == 0)
+        return (MODE);
     if (message.find(" ") != std::string::npos)
         return (Utils::split(message, " ")[0]);
     return (message);
@@ -150,6 +157,35 @@ void Command::execWho(Server &server, std::string message, int fd)
     }
 }
 
+void Command::execNotice(Server &server, std::string message, int fd)
+{
+    Client *sender = server.getClient(fd);
+    reciveMessage info = Parser::privateMessage(message);
+    Logger::Info("Notice from " + sender->getNickName() + " to " + info.target + " : " + info.message);
+    Client* targetClient = server.getClientByNickName(info.target);
+    if (targetClient == NULL)
+    {
+        Channel* channel = server.getChannel(info.target);
+        if (channel != NULL)
+        {
+            for (size_t i = 0; i < channel->getClients().size(); i++)
+            {
+                int targetFd = channel->getClients()[i]->getFd().fd;
+                if (targetFd != fd)
+                    Message::send(targetFd, ":" + sender->getNickName() + "!" + sender->getUserName() + "@0" + " NOTICE " + info.target + " :" + info.message + "\r\n");
+            }
+        }
+        else
+            Logger::Error("Target client " + info.target + " not found.");
+    }
+    else
+    {
+        int targetFd = targetClient->getFd().fd;
+        if (targetFd != fd)
+            Message::send(targetFd, ":" + sender->getNickName() + "!" + sender->getUserName() + "@0" + " NOTICE " + info.target + " :" + info.message + "\r\n");
+    }
+}
+
 void Command::execNick(Server &server, std::string message, int fd)
 {
     std::string sender = server.getClient(fd)->getNickName();
@@ -158,6 +194,7 @@ void Command::execNick(Server &server, std::string message, int fd)
     if (server.getClientByNickName(info.function) != NULL)
     {
         Message::send(fd, ":" + server.getName() + " 433 * " + info.function + " :Nickname is already in use\r\n");
+        Logger::Info("Nickname " + info.function + " is already in use.");
         return;
     }
 
@@ -204,26 +241,40 @@ void Command::execUser(Server &server, std::string message, int fd)
     {
         client->login(serverInfo, userInfo);
     }
-    catch (ClientException &e)
+    catch (ClientException::PasswordMismatchException &e)
     {
-        Message::send(fd, ":" + serverInfo.name + " 464 * :Password incorrect\r\n");
         server.removeClient(fd);
+    }
+}
+
+void Command::execMode(Server &server, std::string message, int fd)
+{
+    try {
+        Mode::Execute(server, message, fd);
+    }
+    catch (ClientException::NotOperatorException &e)
+    {
+        modeInfo info = Parser::modeParse(message);
+        Message::send(fd, ":" + server.getName() + " 482 "+ info.parameters +" " + info.channel + " :You're not channel operator\r\n");
     }
 }
 
 void Command::Execute(Server &server, std::string message, int fd)
 {
     std::vector<std::string> words = Utils::split(message, "\r\n");
-    for (size_t i = 0; i < words.size(); ++i) {
+    for (size_t i = 0; i < words.size(); ++i)
+    {
         if (words.size() == 1 || words[i].empty())
             break;
         Execute(server, words[i], fd);
-        Logger::Info("Command Detected: " + words[i]);
     }
     std::string command = Command::getCommand(message);
-    if (words.size() == 1) {
+    if (words.size() == 1)
+    {
         if (command == Command::QUIT)
             execQuit(server, fd);
+        else if (command == Command::USER)
+            execUser(server, message, fd);
         else if (command == Command::PRIVMSG)
             execPrivMsg(server, message, fd);
         else if (command == Command::JOIN)
@@ -234,11 +285,13 @@ void Command::Execute(Server &server, std::string message, int fd)
             execWho(server, message, fd);
         else if (command == Command::NICK)
             execNick(server, message, fd);
-        else if (command == Command::USER)
-            execUser(server, message, fd);
         else if (command == Command::PASS)
             execPass(server, message, fd);
+        else if (command == Command::NOTICE)
+            execNotice(server, message, fd);
+        else if (command == Command::MODE)
+            execMode(server,message,fd);
         else
-            Message::send(fd, server.getName() + " 421 * " + command + " :Unknown command\r\n");
+            Message::send(fd,  command + " :Unknown command\r\n");
     }
 }

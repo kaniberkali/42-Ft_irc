@@ -4,9 +4,11 @@
 #include <netdb.h>
 #include "../Exception/ClientException.hpp"
 
+#include "../Utils/Utils.hpp"
+
 Client::Client(struct pollfd fd, std::string hostName) : _fd(fd), _login(false), _hostName(hostName)
 {
-    Logger::Info("Client connected from " + _hostName);
+    Logger::Info("Client connected from " + _hostName, 0);
 }
 
 Client::~Client()
@@ -77,7 +79,6 @@ void Client::setUserName(std::string userName)
 
 void Client::login(serverInfo server, userInfo user)
 {
-    _login = true;
     if (server.password == user.password)
     {
         Message::send(_fd.fd, ":"+ server.name +" 001 "+ user.nickName +" :Welcome to the Internet Relay Network "+ user.nickName + "!" + user.userName + "@0" +"\r\n");
@@ -87,5 +88,5 @@ void Client::login(serverInfo server, userInfo user)
         _login = true;
     }
     else
-        throw ClientException::PasswordMismatchException();
+        throw ClientException::PasswordMismatchException(server.name, _fd.fd, user.nickName);
 }

@@ -63,7 +63,8 @@ std::vector<std::string> Utils::split(const std::string &s, const std::string &d
         start = end + delim.length();
         end = s.find(delim, start);
     }
-    elems.push_back(s.substr(start));
+    if (!s.substr(start).empty())
+        elems.push_back(s.substr(start));
     return elems;
 }
 

@@ -54,3 +54,14 @@ userInfo Parser::userParse(std::string message)
     return user;
 }
 
+modeInfo Parser::modeParse(std::string message)
+{
+    modeInfo info;
+    std::vector<std::string> words = Utils::split(message, " ");
+    info.channel = Utils::trim(words[1]);
+    info.status = words[2][0] == '+';
+    info.key = words[2][1];
+    info.parameters = Utils::trim(words[3]);
+    return info;
+}
+

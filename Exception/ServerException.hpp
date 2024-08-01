@@ -11,6 +11,8 @@
 # define SOCKET_NOT_ACCEPT "Socket not accept"
 # define SOCKET_LISTEN_EXCEPTION "Listen process didn't work for socket fd"
 # define SOCKET_READ_EXCEPTION "Read process didn't work for socket fd"
+# define ALREADY_OPERATOR "You have been already operator"
+# define NOT_ALREADY_OPERATOR "You are not operator"
 
 
 class ServerException : public std::exception {
@@ -25,6 +27,8 @@ class ServerException : public std::exception {
         class ListenException;
         class ReadException;
         class InvalidPasswordException;
+        class AlreadyOperatorException;
+        class NotAlreadyOperatorException;
         ServerException(std::string msg) : _message(msg) {
             Logger::Error(_message);
         }
@@ -35,40 +39,50 @@ class ServerException : public std::exception {
 
 
 class ServerException::PortRangeException : public ServerException {
-public:
-    PortRangeException() : ServerException(INVALID_PORT_RANGE) {}
+    public:
+        PortRangeException() : ServerException(INVALID_PORT_RANGE) {}
 };
 
 class ServerException::PortDigitException : public ServerException {
-public:
-    PortDigitException() : ServerException(PORT_NOT_DIGIT) {}
+    public:
+        PortDigitException() : ServerException(PORT_NOT_DIGIT) {}
 };
 
 class ServerException::SocketException : public ServerException {
-public:
-    SocketException() : ServerException(SOCKET_NOT_CREATED) {}
+    public:
+        SocketException() : ServerException(SOCKET_NOT_CREATED) {}
 };
 
 class ServerException::BindException : public  ServerException {
-public:
-    BindException() : ServerException(BINDING_FAILED) {}
+    public:
+        BindException() : ServerException(BINDING_FAILED) {}
 };
 
 class ServerException::AcceptException : public ServerException {
-public:
-    AcceptException() : ServerException(SOCKET_NOT_ACCEPT) {}
+    public:
+        AcceptException() : ServerException(SOCKET_NOT_ACCEPT) {}
 };
 
 class ServerException::ListenException : public ServerException {
-public:
-    ListenException() : ServerException(SOCKET_LISTEN_EXCEPTION) {}
+    public:
+        ListenException() : ServerException(SOCKET_LISTEN_EXCEPTION) {}
 };
 
 class ServerException::ReadException : public ServerException {
-public:
-    ReadException() : ServerException(SOCKET_READ_EXCEPTION) {}
+    public:
+        ReadException() : ServerException(SOCKET_READ_EXCEPTION) {}
 };
 
 
+class ServerException::AlreadyOperatorException : public ServerException {
+    public:
+        AlreadyOperatorException() : ServerException(ALREADY_OPERATOR) {}
+};
+
+class ServerException::NotAlreadyOperatorException: public ServerException
+{
+    public:
+        NotAlreadyOperatorException() : ServerException(NOT_ALREADY_OPERATOR) {}
+};
 
 #endif

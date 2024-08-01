@@ -18,7 +18,7 @@
 # define MAX_CLIENTS 44
 # define BUFFER_SIZE 512
 
-# define TIME_OUT 60000
+# define TIMEOUT 60000
 
 #include <vector>
 #include <poll.h>

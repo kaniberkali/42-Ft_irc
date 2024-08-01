@@ -172,7 +172,7 @@ void Server::listen(void)
             pollFds.push_back(_clients[i]->getFd());
         lastClientSize = _clients.size();
 
-        int pollResult = poll(pollFds.data(), pollFds.size(), TIME_OUT);
+        int pollResult = poll(pollFds.data(), pollFds.size(), TIMEOUT);
         if (pollResult < 0)
         {
             Logger::Error("Polling failed");
