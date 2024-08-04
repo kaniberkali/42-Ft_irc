@@ -61,7 +61,13 @@ modeInfo Parser::modeParse(std::string message)
     info.channel = Utils::trim(words[1]);
     info.status = words[2][0] == '+';
     info.key = words[2][1];
+    if (words.size() == 3)
+        return info;
     info.parameters = Utils::trim(words[3]);
+    if (words.size() == 4)
+        return info;
+    if (words.size() == 5)
+        info.parameters += Utils::trim(words[4]);
     return info;
 }
 

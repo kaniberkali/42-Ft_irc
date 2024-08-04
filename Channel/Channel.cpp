@@ -4,7 +4,11 @@
 void Channel::addClient(Client *client)
 {
     if (_clients.size() == 0)
+    {
+        if (getBan(client->getFd().fd) != NULL)
+            throw ServerException::BanException();
         _operators.push_back(client);
+    }
     _clients.push_back(client);
 }
 
@@ -33,6 +37,17 @@ Channel::Channel(std::string name) : _name(name)
 std::vector<Client *> Channel::getClients()
 {
     return _clients;
+}
+
+std::vector<Client *> Channel::getClients(std::string hostName)
+{
+    std::vector<Client *> clients;
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getHostName() == hostName)
+            clients.push_back(_clients[i]);
+    }
+    return clients;
 }
 
 Client* Channel::getClient(int fd)
@@ -109,6 +124,67 @@ Client *Channel::getOperator(std::string nickname)
     {
         if (_operators[i]->getNickName() == nickname)
             return _operators[i];
+    }
+    return NULL;
+}
+
+void Channel::addBan(Client *client)
+{
+    bool isBan = false;
+    for (size_t i = 0; i < _bans.size(); i++)
+    {
+        if (_bans[i] == client)
+        {
+            isBan = true;
+            break;
+        }
+    }
+    if (!isBan)
+    {
+        _bans.push_back(client);
+        removeClient(client);
+    }
+    else
+        throw ServerException::AlreadyBanException();
+}
+
+void Channel::removeBan(Client *client)
+{
+    bool isBaned = false;
+    for (size_t i = 0; i < _bans.size(); i++)
+    {
+        if (_bans[i] == client)
+        {
+            _bans.erase(_bans.begin() + i);
+            isBaned = true;
+            break;
+        }
+    }
+    if (!isBaned)
+        throw ServerException::NotAlreadyBanException();
+}
+
+std::vector<Client *> Channel::getBans()
+{
+    return _bans;
+}
+
+Client *Channel::getBan(int fd)
+{
+    for (size_t i = 0; i < _bans.size(); i++)
+    {
+        if (_bans[i]->getFd().fd == fd)
+            return _bans[i];
+    }
+    return NULL;
+}
+
+Client *Channel::getBan(std::string nickname)
+{
+    for (size_t i = 0; i < _bans.size(); i++)
+    {
+        if (_bans[i]->getNickName() == nickname)
+            return _bans[i];
     }
     return NULL;
 }

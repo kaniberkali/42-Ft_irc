@@ -13,6 +13,9 @@
 # define SOCKET_READ_EXCEPTION "Read process didn't work for socket fd"
 # define ALREADY_OPERATOR "You have been already operator"
 # define NOT_ALREADY_OPERATOR "You are not operator"
+# define ALREADY_BAN "You have been already ban"
+# define NOT_ALREADY_BAN "You are not ban"
+# define BAN_EXCEPTION "You are banned for this channel"
 
 
 class ServerException : public std::exception {
@@ -29,6 +32,9 @@ class ServerException : public std::exception {
         class InvalidPasswordException;
         class AlreadyOperatorException;
         class NotAlreadyOperatorException;
+        class AlreadyBanException;
+        class NotAlreadyBanException;
+        class BanException;
         ServerException(std::string msg) : _message(msg) {
             Logger::Error(_message);
         }
@@ -83,6 +89,23 @@ class ServerException::NotAlreadyOperatorException: public ServerException
 {
     public:
         NotAlreadyOperatorException() : ServerException(NOT_ALREADY_OPERATOR) {}
+};
+
+class ServerException::AlreadyBanException : public ServerException {
+public:
+    AlreadyBanException() : ServerException(ALREADY_BAN) {}
+};
+
+class ServerException::NotAlreadyBanException: public ServerException
+{
+public:
+    NotAlreadyBanException() : ServerException(NOT_ALREADY_BAN) {}
+};
+
+class ServerException::BanException: public ServerException
+{
+    public:
+        BanException() : ServerException(BAN_EXCEPTION) { }
 };
 
 #endif

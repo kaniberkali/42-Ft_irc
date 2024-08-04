@@ -3,7 +3,6 @@
 #include "../Message/Message.hpp"
 #include <netdb.h>
 #include "../Exception/ClientException.hpp"
-
 #include "../Utils/Utils.hpp"
 
 Client::Client(struct pollfd fd, std::string hostName) : _fd(fd), _login(false), _hostName(hostName)

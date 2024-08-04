@@ -20,13 +20,13 @@ modeInfo Mode::getMode(std::string message)
     return Parser::modeParse(message);
 }
 
-void execOperator(Server &server, modeInfo info, int fd)
+void Mode::execOperator(Server &server, modeInfo info)
 {
     Channel *channel = server.getChannel(info.channel);
     Client *client = channel->getClient(info.parameters);
     std::vector<Client *> clients = channel->getClients();
-    fd = fd + 1;
-    try {
+    try
+    {
         if (info.status)
             channel->addOperator(client);
         else
@@ -46,6 +46,40 @@ void execOperator(Server &server, modeInfo info, int fd)
     catch (ServerException::NotAlreadyOperatorException &e) { }
 }
 
+    void Mode::execBan(Server &server, modeInfo info)
+{
+    Channel *channel = server.getChannel(info.channel);
+    Logger::Debug("true");
+    Logger::Debug(info.parameters);
+    Logger::Debug(Utils::split(info.parameters, "@")[1]);
+    std::vector<Client *> ipClients = channel->getClients(Utils::split(info.parameters, "@")[1]);
+    std::vector<Client *> clients = channel->getClients();
+    try
+    {
+        for (size_t i = 0; i < ipClients.size(); i++)
+        {
+            if (info.status)
+                channel->addBan(ipClients[i]);
+            else
+                channel->removeBan(ipClients[i]);
+            for (size_t i = 0; i < clients.size(); i++)
+            {
+                int targetFd = clients[i]->getFd().fd;
+                if (info.status)
+                    Message::send(targetFd, ":" + ipClients[i]->getNickName() + "!" + ipClients[i]->getUserName() + "@" + " MODE " +
+                                            channel->getName() + " +b " + info.parameters + "\r\n");
+                else
+                    Message::send(targetFd, ":" + ipClients[i]->getNickName() + "!" + ipClients[i]->getUserName() + "@" + " MODE " +
+                                            channel->getName() + " -b " + info.parameters + "\r\n");
+            }
+        }
+    }
+    catch (ServerException::AlreadyOperatorException &e) { }
+    catch (ServerException::NotAlreadyOperatorException &e) { }
+}
+
+
+
 void Mode::Execute(Server &server, std::string message, int fd)
 {
     Client *client = server.getClient(fd);
@@ -58,6 +92,8 @@ void Mode::Execute(Server &server, std::string message, int fd)
         if (!channel->getOperator(fd))
             throw ClientException::NotOperatorException(server.getName(), fd , client->getNickName() ,channel->getName());
         if (info.key == OPERATOR)
-            execOperator(server, info, fd);
+            execOperator(server, info);
+        else if (info.key == BAN)
+            execBan(server, info);
     }
 }

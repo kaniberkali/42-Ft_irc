@@ -108,6 +108,7 @@ void Server::listen(int fd, std::string hostName)
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     Logger::Info("New client connecting");
+    Logger::Debug(hostName);
     Client *client = new Client(socketPoll, hostName);
     _clients.push_back(client);
     Logger::Info("New client connected");

@@ -19,6 +19,8 @@ class Mode
         static std::string KEY;
 
         static modeInfo getMode(std::string message);
+        static void execOperator(Server &server, modeInfo info);
+        static void execBan(Server &server, modeInfo info);
         static void Execute(Server &server, std::string message, int fd);
 };
 

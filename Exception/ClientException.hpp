@@ -9,6 +9,7 @@
 
 #define PASSWORD_INCORRECT(nickName) nickName + " :Password incorrect"
 #define NOT_OPERATOR(nickName, channelName) nickName + " " + channelName + " :You're not channel operator"
+#define NO_SUCH_NICK_OR_CHANNEL(nickName, channelName) nickName + " " + channelName + " :No such nick/channel"
 
 // :irc.ft_messenger.net 464 eymen :Password incorrect
 // :irc.ft_messenger.net 482 ogdurkan #kanal_2 :You're not channel operator
@@ -19,6 +20,7 @@ class ClientException : public std::exception {
     public:
         class NotOperatorException;
         class PasswordMismatchException;
+        class NoSuchNickOrChannelException;
         ClientException(std::string serverName, int fd, int errorCode, const std::string& msg) : _errorCode(errorCode), _message(msg)
         {
             Logger::Fatal(":" + serverName + " " + Utils::toString(_errorCode) + " " + _message);
@@ -40,5 +42,10 @@ class ClientException::NotOperatorException : public ClientException {
         : ClientException(serverName, fd, 482, NOT_OPERATOR(nickName, channelName)) { }
 };
 
+class ClientException::NoSuchNickOrChannelException : public ClientException {
+public:
+    NoSuchNickOrChannelException(std::string serverName, int fd , std::string nickName,std::string channelName)
+     : ClientException(serverName, fd, 401, NO_SUCH_NICK_OR_CHANNEL(nickName, channelName)) { }
+};
 
 #endif
