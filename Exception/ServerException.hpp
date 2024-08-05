@@ -16,7 +16,8 @@
 # define ALREADY_BAN "You have been already ban"
 # define NOT_ALREADY_BAN "You are not ban"
 # define BAN_EXCEPTION "You are banned for this channel"
-
+# define ALREADY_INVITE_EXCEPTION "You are already invited."
+# define NOT_ALREADY_INVITE_EXCEPTION "You are not already invited."
 
 class ServerException : public std::exception {
     private:
@@ -35,6 +36,8 @@ class ServerException : public std::exception {
         class AlreadyBanException;
         class NotAlreadyBanException;
         class BanException;
+        class AlreadyInviteException;
+        class NotAlreadyInviteException;
         ServerException(std::string msg) : _message(msg) {
             Logger::Error(_message);
         }
@@ -107,5 +110,18 @@ class ServerException::BanException: public ServerException
     public:
         BanException() : ServerException(BAN_EXCEPTION) { }
 };
+
+class ServerException::AlreadyInviteException: public ServerException
+{
+public:
+    AlreadyInviteException() : ServerException(ALREADY_INVITE_EXCEPTION) { }
+};
+
+class ServerException::NotAlreadyInviteException: public ServerException
+{
+public:
+    NotAlreadyInviteException() : ServerException(NOT_ALREADY_INVITE_EXCEPTION) { }
+};
+
 
 #endif

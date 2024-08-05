@@ -34,6 +34,15 @@ std::string Utils::toString(const T& value)
     return stringStream.str();
 }
 
+int Utils::toInt(std::string value)
+{
+    std::stringstream stringStream;
+    stringStream << value;
+    int intValue;
+    stringStream >> intValue;
+    return intValue;
+}
+
 std::string Utils::trim(const std::string &s)
 {
     std::string::const_iterator start = s.begin();

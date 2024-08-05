@@ -18,7 +18,8 @@ std::string Command::USER = "USER";
 std::string Command::PASS = "PASS";
 std::string Command::NOTICE = "NOTICE";
 std::string Command::MODE = "MODE";
-std::string  Command::KICK = "KICK";
+std::string Command::KICK = "KICK";
+std::string Command::INVITE = "INVITE";
 
 std::string Command::getCommand(std::string message) {
     if (message.rfind(QUIT, 0) == 0)
@@ -41,6 +42,8 @@ std::string Command::getCommand(std::string message) {
         return (MODE);
     else if (message.rfind(KICK, 0) == 0)
         return (KICK);
+    else if (message.rfind(INVITE, 0) == 0)
+        return (INVITE);
     if (message.find(" ") != std::string::npos)
         return (Utils::split(message, " ")[0]);
     return (message);
@@ -51,23 +54,36 @@ void Command::execQuit(Server &server, int fd) {
 }
 
 void Command::execJoin(Server &server, std::string message, int fd) {
-    std::string sender = server.getClient(fd)->getNickName();
-    parseInfo info = Parser::parse(message);
-    Logger::Info(sender + " join to " + info.function);
-    Channel *channel = server.getChannel(info.function);
-    if (channel != NULL) {
-        channel->addClient(server.getClient(fd));
-        std::vector < Client * > clients = channel->getClients();
-        for (size_t i = 0; i < channel->getClients().size(); i++) {
-            int targetFd = clients[i]->getFd().fd;
-            Message::send(targetFd, ":" + sender + " JOIN " + info.function + "\r\n");
+    try
+    {
+        std::string sender = server.getClient(fd)->getNickName();
+        parseInfo info = Parser::parse(message);
+        Channel *channel = server.getChannel(info.function);
+        if (channel != NULL)
+        {
+            if (channel->getPassword() != "" && channel->getPassword() != info.value)
+                throw ClientException::WrongPasswordException(server.getName(), fd, channel->getName());
+            channel->addClient(server.getName(), server.getClient(fd));
+            std::vector < Client * > clients = channel->getClients();
+            for (size_t i = 0; i < channel->getClients().size(); i++) {
+                int targetFd = clients[i]->getFd().fd;
+                Logger::Info(sender + " join to " + info.function);
+                Message::send(targetFd, ":" + sender + " JOIN " + info.function + "\r\n");
+            }
         }
-    } else {
-        Channel *newChannel = new Channel(info.function);
-        newChannel->addClient(server.getClient(fd));
-        server.addChannel(newChannel);
-        Message::send(fd, ":" + sender + " JOIN " + info.function + "\r\n");
+        else
+        {
+            Channel *newChannel = new Channel(info.function);
+            newChannel->addClient(server.getName(), server.getClient(fd));
+            server.addChannel(newChannel);
+            Logger::Info(sender + " join to " + info.function);
+            Message::send(fd, ":" + sender + " JOIN " + info.function + "\r\n");
+        }
     }
+    catch (ClientException::BanException &e) { }
+    catch (ClientException::ChannelFullException &e) { }
+    catch (ClientException::InviteOnlyException &e) { }
+    catch (ClientException::WrongPasswordException &e) { }
 }
 
 void Command::execPrivMsg(Server &server, std::string message, int fd) {
@@ -137,9 +153,9 @@ void Command::execWho(Server &server, std::string message, int fd) {
                           ":" + server.getName() + " 315 " + client->getNickName() + " " + channel->getName() +
                           " :End of /WHO list\r\n");
         }
-    } else {
-        Message::send(fd, ":" + server.getName() + " 366 * :End of WHO list\r\n");
     }
+    else
+        Message::send(fd, ":" + server.getName() + " 366 * :End of WHO list\r\n");
 }
 
 void Command::execNotice(Server &server, std::string message, int fd) {
@@ -229,36 +245,62 @@ void Command::execMode(Server &server, std::string message, int fd) {
     catch (ClientException::NotOperatorException &e) {}
 }
 
-void Command::execKick(Server &server, std::string message, int fd) {
+void Command::execKick(Server &server, std::string message, int fd)
+{
     parseInfo info = Parser::parse(message);
+    std::string reason = "";
+    if (message.find(":") != std::string::npos)
+    {
+        std::vector<std::string> words = Utils::split(message, ":");
+        message = Utils::trim(words[0]);
+        reason = Utils::trim(words[1]);
+        info = Parser::parse(message);
+    }
+
     Channel *channel = server.getChannel(info.function);
-    //if (channel == NULL)
-    //{
-    //  Message::send(fd, ":" + server.getName() + " 403 " + server.getClient(fd)->getNickName() + " " + info.function + " :No such channel\r\n");
-    // return;
-    //}
-
-    try {
-
+    try
+    {
         if (channel->getOperator(fd) == NULL)
             throw ClientException::NotOperatorException(server.getName(), fd, server.getClient(fd)->getNickName(),info.function);
+        Logger::Debug(info.value);
         if (channel->getClient(info.value) == NULL)
-        {
-            if (info.value.find(":") != std::string::npos)
-            {
-                std::string nickName = Utils::split(info.value, ":")[1];
-                throw ClientException::NoSuchNickOrChannelException(server.getName(), fd , nickName, channel->getName());
-            }
-        }
+            throw ClientException::NoSuchNickOrChannelException(server.getName(), fd , info.value, channel->getName());
         std::vector < Client * > clients = channel->getClients();
-        for (size_t i = 0; i < clients.size(); i++) {
+        for (size_t i = 0; i < clients.size(); i++)
+        {
             int targetFd = clients[i]->getFd().fd;
-            Message::send(targetFd, ":" + server.getName() + " KICK " + channel->getName() + " " + info.value + "\r\n");
+            if (!reason.empty())
+                Message::send(targetFd, ":" + server.getName() + " KICK " + channel->getName() + " " + info.value + " :" + reason + "\r\n");
+            else
+                Message::send(targetFd, ":" + server.getName() + " KICK " + channel->getName() + " " + info.value + "\r\n");
         }
         channel->removeClient(channel->getClient(info.value));
     }
     catch (ClientException::NotOperatorException &e) {}
     catch (ClientException::NoSuchNickOrChannelException &e) {}
+}
+
+void Command::execInvite(Server &server, std::string message, int fd)
+{
+    parseInfo info = Parser::parse(message);
+    Channel *channel = server.getChannel(info.function);
+    try
+    {
+        if (channel->getOperator(fd) == NULL)
+            throw ClientException::NotOperatorException(server.getName(), fd, server.getClient(fd)->getNickName(),info.function);
+        if (channel->getClient(info.value) == NULL)
+            throw ClientException::NoSuchNickOrChannelException(server.getName(), fd , info.value, channel->getName());
+        channel->addInvite(channel->getClient(info.value));
+        std::vector <Client *> clients = channel->getClients();
+        for (size_t i = 0; i < clients.size(); i++)
+        {
+            int targetFd = clients[i]->getFd().fd;
+            Message::send(targetFd, ":" + server.getName() + " INVITE " + channel->getName() + " " + info.value + "\r\n");
+        }
+    }
+    catch (ClientException::NotOperatorException &e) { }
+    catch (ClientException::NoSuchNickOrChannelException &e) {}
+
 }
 
 void Command::Execute(Server &server, std::string message, int fd) {
@@ -292,6 +334,8 @@ void Command::Execute(Server &server, std::string message, int fd) {
             execMode(server, message, fd);
         else if (command == Command::KICK)
             execKick(server, message, fd);
+        else if (command == Command::INVITE)
+            execInvite(server, message, fd);
         else
             Message::send(fd, command + " :Unknown command\r\n");
     }

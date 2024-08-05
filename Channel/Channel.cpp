@@ -1,14 +1,17 @@
 #include "Channel.hpp"
 #include "../Exception/ServerException.hpp"
+#include "../Exception/ClientException.hpp"
 
-void Channel::addClient(Client *client)
+void Channel::addClient(std::string serverName, Client *client)
 {
+    if (getBan(client->getHostName()) != NULL)
+        throw ClientException::BanException(serverName, client->getFd().fd, this->_name);
+    if (_limit != 0 && _clients.size() == _limit)
+        throw ClientException::ChannelFullException(serverName, client->getFd().fd, this->_name);
+    if (_inviteOnly && getInvite(client->getNickName()) == NULL)
+        throw ClientException::InviteOnlyException(serverName, client->getFd().fd, this->_name);
     if (_clients.size() == 0)
-    {
-        if (getBan(client->getFd().fd) != NULL)
-            throw ServerException::BanException();
         _operators.push_back(client);
-    }
     _clients.push_back(client);
 }
 
@@ -29,7 +32,7 @@ std::string Channel::getName()
     return _name;
 }
 
-Channel::Channel(std::string name) : _name(name)
+Channel::Channel(std::string name) : _name(name), _limit(NON_LIMITED), _inviteOnly(false), _password("")
 {
 
 }
@@ -130,22 +133,13 @@ Client *Channel::getOperator(std::string nickname)
 
 void Channel::addBan(Client *client)
 {
-    bool isBan = false;
     for (size_t i = 0; i < _bans.size(); i++)
     {
-        if (_bans[i] == client)
-        {
-            isBan = true;
-            break;
-        }
+        if (_bans[i]->getHostName() == client->getHostName())
+            throw ServerException::AlreadyBanException();
     }
-    if (!isBan)
-    {
-        _bans.push_back(client);
-        removeClient(client);
-    }
-    else
-        throw ServerException::AlreadyBanException();
+    _bans.push_back(client);
+    removeClient(client);
 }
 
 void Channel::removeBan(Client *client)
@@ -153,7 +147,7 @@ void Channel::removeBan(Client *client)
     bool isBaned = false;
     for (size_t i = 0; i < _bans.size(); i++)
     {
-        if (_bans[i] == client)
+        if (_bans[i]->getHostName() == client->getHostName())
         {
             _bans.erase(_bans.begin() + i);
             isBaned = true;
@@ -179,12 +173,83 @@ Client *Channel::getBan(int fd)
     return NULL;
 }
 
-Client *Channel::getBan(std::string nickname)
+Client *Channel::getBan(std::string hostName)
 {
     for (size_t i = 0; i < _bans.size(); i++)
     {
-        if (_bans[i]->getNickName() == nickname)
+        if (_bans[i]->getHostName() == hostName)
             return _bans[i];
     }
     return NULL;
+}
+
+void Channel::setLimit(int limit)
+{
+    _limit = limit;
+}
+
+void Channel::setInviteOnly(bool inviteOnly)
+{
+    _inviteOnly = inviteOnly;
+}
+
+void Channel::addInvite(Client *client)
+{
+    for (size_t i = 0; i < _invites.size(); i++)
+    {
+        if (_invites[i] == client)
+            throw ServerException::AlreadyInviteException();
+    }
+    _invites.push_back(client);
+}
+
+void Channel::removeInvite(Client *client)
+{
+    bool isDeleted = false;
+    for (size_t i = 0; i < _invites.size(); i++)
+    {
+        if (_invites[i] == client)
+        {
+            _invites.erase(_invites.begin() + i);
+            isDeleted = true;
+            break;
+        }
+    }
+    if (!isDeleted)
+        throw ServerException::NotAlreadyInviteException();
+}
+
+std::vector<Client *> Channel::getInvites()
+{
+    return _invites;
+}
+
+Client *Channel::getInvite(int fd)
+{
+    for (size_t i = 0; i < _invites.size(); i++)
+    {
+        if (_invites[i]->getFd().fd == fd)
+            return _invites[i];
+    }
+    return NULL;
+}
+
+Client *Channel::getInvite(std::string nickname)
+{
+    for (size_t i = 0; i < _invites.size(); i++)
+    {
+        if (_invites[i]->getNickName() == nickname)
+            return _invites[i];
+    }
+    return NULL;
+}
+
+void Channel::setPassword(std::string password)
+{
+    _password = password;
+}
+
+std::string Channel::getPassword()
+{
+    return _password;
 }

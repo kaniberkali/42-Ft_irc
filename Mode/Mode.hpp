@@ -21,6 +21,9 @@ class Mode
         static modeInfo getMode(std::string message);
         static void execOperator(Server &server, modeInfo info);
         static void execBan(Server &server, modeInfo info);
+        static void execLimit(Server &server, modeInfo info);
+        static void execInviteOnly(Server &server, modeInfo info);
+        static void execKey(Server &server, modeInfo info);
         static void Execute(Server &server, std::string message, int fd);
 };
 

@@ -3,6 +3,7 @@
 #include "../Exception/ServerException.hpp"
 #include "../Message/Message.hpp"
 #include "../Utils/Utils.hpp"
+#include "../Command/Command.hpp"
 
 std::string Mode::BAN = "b";
 std::string Mode::INVITE_ONLY = "i";
@@ -46,39 +47,92 @@ void Mode::execOperator(Server &server, modeInfo info)
     catch (ServerException::NotAlreadyOperatorException &e) { }
 }
 
-    void Mode::execBan(Server &server, modeInfo info)
+void Mode::execBan(Server &server, modeInfo info)
 {
     Channel *channel = server.getChannel(info.channel);
-    Logger::Debug("true");
-    Logger::Debug(info.parameters);
-    Logger::Debug(Utils::split(info.parameters, "@")[1]);
-    std::vector<Client *> ipClients = channel->getClients(Utils::split(info.parameters, "@")[1]);
     std::vector<Client *> clients = channel->getClients();
     try
     {
-        for (size_t i = 0; i < ipClients.size(); i++)
+        if (info.status)
         {
-            if (info.status)
-                channel->addBan(ipClients[i]);
-            else
-                channel->removeBan(ipClients[i]);
-            for (size_t i = 0; i < clients.size(); i++)
+            std::vector<Client *> ipClients = channel->getClients(Utils::split(info.parameters, "@")[1]);
+            for (size_t i = 0; i < ipClients.size(); i++)
             {
-                int targetFd = clients[i]->getFd().fd;
-                if (info.status)
-                    Message::send(targetFd, ":" + ipClients[i]->getNickName() + "!" + ipClients[i]->getUserName() + "@" + " MODE " +
-                                            channel->getName() + " +b " + info.parameters + "\r\n");
-                else
-                    Message::send(targetFd, ":" + ipClients[i]->getNickName() + "!" + ipClients[i]->getUserName() + "@" + " MODE " +
-                                            channel->getName() + " -b " + info.parameters + "\r\n");
+                channel->addBan(ipClients[i]);
+                Message::send(ipClients[i]->getFd().fd, ":" + server.getName() + " KICK " + channel->getName() + " " + ipClients[i]->getNickName() + " :You are banned\r\n");
             }
         }
+        for (size_t i = 0; i < clients.size(); i++)
+        {
+            int targetFd = clients[i]->getFd().fd;
+            if (info.status)
+                Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                        channel->getName() + " +b " + info.parameters + "\r\n");
+            else
+            {
+                Message::send(targetFd,
+                              ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                              channel->getName() + " -b " + info.parameters + "\r\n");
+            }
+            Command::Execute(server, "WHO " + channel->getName(), targetFd);
+        }
+        if (!info.status)
+            channel->removeBan(channel->getBan(Utils::trim(Utils::split(info.parameters, "@")[1])));
     }
-    catch (ServerException::AlreadyOperatorException &e) { }
-    catch (ServerException::NotAlreadyOperatorException &e) { }
+    catch (ServerException::NotAlreadyBanException &e) { }
+    catch (ServerException::AlreadyBanException &e) { }
 }
 
+void Mode::execLimit(Server &server, modeInfo info)
+{
+    Channel *channel = server.getChannel(info.channel);
+    std::vector<Client *> clients = channel->getClients();
+    channel->setLimit(Utils::toInt(info.parameters));
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        int targetFd = clients[i]->getFd().fd;
+        if (info.status)
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " +l " + info.parameters + "\r\n");
+        else
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " -l " + info.parameters + "\r\n");
+    }
+}
 
+void Mode::execInviteOnly(Server &server, modeInfo info)
+{
+    Channel *channel = server.getChannel(info.channel);
+    std::vector<Client *> clients = channel->getClients();
+    channel->setInviteOnly(info.status);
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        int targetFd = clients[i]->getFd().fd;
+        if (info.status)
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " +i " + info.parameters + "\r\n");
+        else
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " -i " + info.parameters + "\r\n");
+    }
+}
+
+void Mode::execKey(Server &server, modeInfo info)
+{
+    Channel *channel = server.getChannel(info.channel);
+    std::vector<Client *> clients = channel->getClients();
+    channel->setPassword(info.parameters);
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        int targetFd = clients[i]->getFd().fd;
+        if (info.status)
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " +k " + info.parameters + "\r\n");
+        else
+            Message::send(targetFd, ":" + clients[i]->getNickName() + "!" + clients[i]->getUserName() + "@" + " MODE " +
+                                    channel->getName() + " -k " + info.parameters + "\r\n");
+    }
+}
 
 void Mode::Execute(Server &server, std::string message, int fd)
 {
@@ -95,5 +149,11 @@ void Mode::Execute(Server &server, std::string message, int fd)
             execOperator(server, info);
         else if (info.key == BAN)
             execBan(server, info);
+        else if (info.key == LIMIT)
+            execLimit(server, info);
+        else if (info.key == INVITE_ONLY)
+            execInviteOnly(server, info);
+        else if (info.key == KEY)
+            execKey(server, info);
     }
 }

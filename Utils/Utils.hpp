@@ -18,6 +18,8 @@ class Utils
         template <typename T>
         static std::string toString(const T& value);
 
+        static int toInt(std::string value);
+
         static std::vector<std::string> split(const std::string &s, const std::string &delim);
 };
 

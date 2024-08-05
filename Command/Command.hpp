@@ -19,6 +19,7 @@ class Command
         static std::string NOTICE;
         static std::string MODE;
         static std::string KICK;
+        static std::string INVITE;
 
         static std::string getCommand(std::string message);
         static void Execute(Server &server, std::string message, int fd);
@@ -34,6 +35,7 @@ class Command
         static void execNotice(Server &server, std::string message, int fd);
         static void execMode(Server &server, std::string message, int fd);
         static void execKick(Server &server, std::string message, int fd);
+        static void execInvite(Server &server, std::string message, int fd);
 
 };
 
