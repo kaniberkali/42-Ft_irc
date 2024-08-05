@@ -18,7 +18,7 @@
 # define MAX_CLIENTS 44
 # define BUFFER_SIZE 512
 
-# define TIME_OUT 0
+# define TIMEOUT 60000
 
 #include <vector>
 #include <poll.h>
@@ -38,6 +38,7 @@ class Server
         std::vector<Channel *> _channels;
         std::string _name;
         std::string _version;
+        std::string _createdDate;
     public:
         Server(void);
         Server(int port, std::string password);
@@ -49,7 +50,6 @@ class Server
         void listen(void);
         void listen(int fd, std::string hostName);
         void read();
-        void setClientInfo(int fd, clientInfo info);
         void removeClient(int fd);
         std::string read(int fd);
         void close(int fd);
@@ -58,8 +58,12 @@ class Server
         void addChannel(Channel *channel);
         Channel *getChannel(std::string name);
         std::string getName();
-        std::size_t ChannelsSize();
-        Channel* getChannelIndex(int index);
+        std::string getVersion();
+        Channel *getChannel(int index);
+        std::vector<Channel *> getChannels();
+        std::vector<Client *> getClients();
+        std::string getCreateDate();
+        serverInfo getInfo();
 };
 
 

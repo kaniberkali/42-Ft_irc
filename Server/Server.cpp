@@ -46,6 +46,7 @@ Server::Server(int port, std::string password) : _port(port), _password(password
     this->_terminate = false;
     this->_name = DEFAULT_NAME;
     this->_version = DEFAULT_VERSION;
+    this->_createdDate = Utils::time("d M Y H:i:s z");
     Logger::Info("Server starting on port " + Utils::toString(port) + " with password " + password);
     signal(SIGQUIT, &signalHandler);
     Logger::Trace("Signal QUIT handled");
@@ -107,24 +108,11 @@ void Server::listen(int fd, std::string hostName)
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     Logger::Info("New client connecting");
+    Logger::Debug(hostName);
     Client *client = new Client(socketPoll, hostName);
     _clients.push_back(client);
     Logger::Info("New client connected");
 
-}
-
-void Server::setClientInfo(int fd, clientInfo info)
-{
-    if (info.password != _password)
-        throw ClientException::PasswordMismatchException() ;
-    for (size_t i = 0; i < _clients.size(); i++)
-    {
-        if (_clients[i]->getFd().fd == fd)
-        {
-            _clients[i]->setInfo(info);
-            break;
-        }
-    }
 }
 
 void Server::close(int fd)
@@ -185,7 +173,7 @@ void Server::listen(void)
             pollFds.push_back(_clients[i]->getFd());
         lastClientSize = _clients.size();
 
-        int pollResult = poll(pollFds.data(), pollFds.size(), TIME_OUT);
+        int pollResult = poll(pollFds.data(), pollFds.size(), TIMEOUT);
         if (pollResult < 0)
         {
             Logger::Error("Polling failed");
@@ -267,12 +255,37 @@ std::string Server::getName()
     return _name;
 }
 
-std::size_t Server::ChannelsSize()
-{ 
-    return _channels.size();
+std::string Server::getVersion()
+{
+    return _version;
 }
 
-Channel *Server::getChannelIndex(int index)
+Channel *Server::getChannel(int index)
 {
     return _channels[index];
+}
+
+std::vector<Channel *> Server::getChannels()
+{
+    return _channels;
+}
+
+std::vector<Client *> Server::getClients()
+{
+    return _clients;
+}
+
+std::string Server::getCreateDate()
+{
+    return _createdDate;
+}
+
+serverInfo Server::getInfo()
+{
+    serverInfo info;
+    info.name = _name;
+    info.password = _password;
+    info.version = _version;
+    info.createDate = _createdDate;
+    return info;
 }

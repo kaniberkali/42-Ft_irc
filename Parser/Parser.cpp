@@ -3,39 +3,10 @@
 #include <sstream>
 #include "../Utils/Utils.hpp"
 
-clientInfo Parser::connectionMessage(std::string message)
-{
-    clientInfo info;
-    std::stringstream stream(message);
-    std::string word;
-
-    while (stream >> word)
-    {
-        if (word == "USER")
-        {
-            stream >> info.userName;
-            std::getline(stream, info.realName, ':');
-            std::getline(stream, info.realName);
-        }
-        else if (word == "NICK")
-            stream >> info.nickName;
-        else if (word == "PASS")
-            stream >> info.password;
-    }
-    if (!info.realName.empty() && info.realName[0] == ' ')
-        info.realName.erase(0, 1);
-
-    info.realName = Utils::trim(info.realName);
-    info.userName = Utils::trim(info.userName);
-    info.nickName = Utils::trim(info.nickName);
-    info.password = Utils::trim(info.password);
-    return info;
-}
-
 reciveMessage Parser::privateMessage(std::string message)
 {
     reciveMessage info;
-    std::vector<std::string> words = Utils::split(message, ' ');
+    std::vector<std::string> words = Utils::split(message, " ");
     info.target = words[1];
 
     if (words[2][0] == ':')
@@ -58,7 +29,7 @@ parseInfo Parser::parse(std::string message)
         info.command = message;
         return info;
     }
-    std::vector<std::string> words = Utils::split(message, ' ');
+    std::vector<std::string> words = Utils::split(message, " ");
     info.command = Utils::trim(words[0]);
     if (words.size() == 1)
         return info;
@@ -73,3 +44,30 @@ parseInfo Parser::parse(std::string message)
     }
     return info;
 }
+
+userInfo Parser::userParse(std::string message)
+{
+    userInfo user;
+    std::vector<std::string> words = Utils::split(message, " ");
+    user.userName = words[1];
+    user.realName = words[4];
+    return user;
+}
+
+modeInfo Parser::modeParse(std::string message)
+{
+    modeInfo info;
+    std::vector<std::string> words = Utils::split(message, " ");
+    info.channel = Utils::trim(words[1]);
+    info.status = words[2][0] == '+';
+    info.key = words[2][1];
+    if (words.size() == 3)
+        return info;
+    info.parameters = Utils::trim(words[3]);
+    if (words.size() == 4)
+        return info;
+    if (words.size() == 5)
+        info.parameters += Utils::trim(words[4]);
+    return info;
+}
+

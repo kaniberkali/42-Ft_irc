@@ -11,6 +11,7 @@ SRC = main.cpp \
 	  Command/Command.cpp \
 	  Message/Message.cpp \
 	  Channel/Channel.cpp \
+	  Mode/Mode.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

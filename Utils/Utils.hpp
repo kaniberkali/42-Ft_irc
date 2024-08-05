@@ -10,13 +10,17 @@ class Utils
     private:
 
     public:
-        static std::string time();
+        static std::string time(std::string format = "Y-m-d H:i:s");
+        static std::string getMonthName(int month);
         static std::string trim(const std::string &s);
+        static std::string padStart(std::string str, size_t length = 2, char padChar = '0');
 
         template <typename T>
         static std::string toString(const T& value);
 
-        static std::vector<std::string> split(const std::string &s, char delim);
+        static int toInt(std::string value);
+
+        static std::vector<std::string> split(const std::string &s, const std::string &delim);
 };
 
 
