@@ -46,7 +46,7 @@ Server::Server(int port, std::string password) : _port(port), _password(password
     this->_terminate = false;
     this->_name = DEFAULT_NAME;
     this->_version = DEFAULT_VERSION;
-    this->_createdDate = Utils::time("d M Y H:i:s z");
+    this->_createdDate = Utils::date("D, d M Y H:i:s z");
     Logger::Info("Server starting on port " + Utils::toString(port) + " with password " + password);
     signal(SIGQUIT, &signalHandler);
     Logger::Trace("Signal QUIT handled");
@@ -143,6 +143,8 @@ void Server::removeClient(int fd)
             break;
         }
     }
+    for (size_t i = 0; i < _channels.size(); i++)
+        _channels[i]->removeClient(_channels[i]->getClient(fd));
     close(fd);
     Logger::Info("Client " + Utils::toString(fd) + " removed");
 }
@@ -220,6 +222,16 @@ Client* Server::getClient(int fd)
     for (size_t i = 0; i < _clients.size(); i++)
     {
         if (_clients[i]->getFd().fd == fd)
+            return _clients[i];
+    }
+    return NULL;
+}
+
+Client* Server::getClient(std::string nickName)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getNickName() == nickName)
             return _clients[i];
     }
     return NULL;

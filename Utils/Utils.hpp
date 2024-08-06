@@ -10,8 +10,9 @@ class Utils
     private:
 
     public:
-        static std::string time(std::string format = "Y-m-d H:i:s");
+        static std::string date(std::string format = "Y-m-d H:i:s");
         static std::string getMonthName(int month);
+        static std::string getDayName(int day);
         static std::string trim(const std::string &s);
         static std::string padStart(std::string str, size_t length = 2, char padChar = '0');
 

@@ -1,6 +1,7 @@
 #include "Message.hpp"
 #include "../Logger/Logger.hpp"
 #include <sys/socket.h>
+#include "../Utils/Utils.hpp"
 
 Message::Message()
 {
@@ -16,7 +17,7 @@ void Message::send(int fd, std::string message)
     if (bytes_sent < 0)
         Logger::Error("Send message failed");
     else
-        Logger::Info("Message sended");
+        Logger::HexChat(Utils::trim(message));
 }
 
 void Message::send(Channel *channel, Client *client, std::string message)

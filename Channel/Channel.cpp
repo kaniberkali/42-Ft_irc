@@ -21,6 +21,11 @@ void Channel::removeClient(Client *client)
     {
         if (_clients[i] == client)
         {
+            try
+            {
+                removeOperator(_clients[i]);
+            }
+            catch (ServerException::NotAlreadyOperatorException &e) { }
             _clients.erase(_clients.begin() + i);
             break;
         }

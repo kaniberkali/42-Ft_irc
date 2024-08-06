@@ -10,6 +10,7 @@ class Client
     private:
         struct pollfd _fd;
         bool _login;
+        bool _alreadyRegistered;
         std::string _userName;
         std::string _hostName;
         std::string _serverName;
@@ -28,11 +29,14 @@ class Client
         std::string getServerName();
         std::string getRealName();
         std::string getPassword();
+        bool isAlreadyRegistered();
 
         void setNickName(std::string nickName);
         void setPassword(std::string name);
         void setUserName(std::string name);
         void setRealName(std::string name);
+        void setAlreadyRegistered(bool status);
+        userInfo getInfo();
 
 };
 

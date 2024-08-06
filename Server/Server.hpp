@@ -54,6 +54,7 @@ class Server
         std::string read(int fd);
         void close(int fd);
         Client *getClient(int fd);
+        Client *getClient(std::string nickName);
         Client *getClientByNickName(std::string nickname);
         void addChannel(Channel *channel);
         Channel *getChannel(std::string name);

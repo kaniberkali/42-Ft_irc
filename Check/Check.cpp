@@ -2,15 +2,8 @@
 #include "../Server/Server.hpp"
 #include <stdlib.h>
 
-Check::Check() {
-    std::cout << "Check constructor" << std::endl;
-}
-
-Check::~Check() {
-    std::cout << "Check destructor" << std::endl;
-}
-
-int Check::CheckPort(std::string port) { 
+int Check::CheckPort(std::string port)
+{
 
     for (size_t i = 0; i < port.length(); i++)
     {
