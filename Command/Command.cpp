@@ -97,7 +97,7 @@ void Command::execJoin(Server &server, std::string message, int fd) {
 void Command::execPrivMsg(Server &server, std::string message, int fd) {
     std::string sender = server.getClient(fd)->getNickName();
     reciveMessage info = Parser::privateMessage(message);
-    Logger::Info("Message from " + sender + " to " + info.target + " : " + info.message);
+    Logger::Info("Message from " + sender + " to " + Utils::trim(info.target) + " : " + info.message);
     Client *targetClient = server.getClientByNickName(info.target);
     if (targetClient == NULL) {
         Channel *channel = server.getChannel(info.target);
@@ -108,7 +108,7 @@ void Command::execPrivMsg(Server &server, std::string message, int fd) {
                     Message::send(targetFd, ":" + sender + " PRIVMSG " + info.target + " :" + info.message + "\r\n");
             }
         } else
-            Logger::Error("Target client " + info.target + " not found.");
+            Logger::Error("Target client " + Utils::trim(info.target) + " not found.");
     } else {
         int targetFd = targetClient->getFd().fd;
         Message::send(targetFd, ":" + sender + " PRIVMSG " + info.target + " :" + info.message + "\r\n");
@@ -185,7 +185,7 @@ void Command::execNotice(Server &server, std::string message, int fd) {
                                   info.target + " :" + info.message + "\r\n");
             }
         } else
-            Logger::Error("Target client " + info.target + " not found.");
+            Logger::Error("Target client " + Utils::trim(info.target) + " not found.");
     } else {
         int targetFd = targetClient->getFd().fd;
         if (targetFd != fd)

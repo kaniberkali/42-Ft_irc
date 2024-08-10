@@ -137,6 +137,7 @@ bool Checker::check(Server &server, std::string message, int fd)
     std::string format = "";
     for (size_t i = 1; i < words.size(); i++)
         format += (i == 1) ? words[i] : " " + words[i];
+    format = Utils::trim(format);
     if (command == WHO)
     {
         if (!checkOnlyChannel(format))

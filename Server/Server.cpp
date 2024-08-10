@@ -190,7 +190,7 @@ std::string Server::read(int fd)
             Logger::Trace("Read: " + Utils::trim(messages[i]));
     }
     else
-        Logger::Trace("Read: " + message);
+        Logger::Trace("Read: " + Utils::trim(message));
     return message;
 }
 
