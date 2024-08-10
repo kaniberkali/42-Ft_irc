@@ -9,6 +9,7 @@ struct userInfo {
     std::string password;
     std::string userName;
     std::string realName;
+    std::string hostName;
 };
 
 struct serverInfo

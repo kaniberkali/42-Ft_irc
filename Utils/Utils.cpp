@@ -1,7 +1,7 @@
 #include "Utils.hpp"
 #include <sstream>
 
-std::string Utils::time(std::string format) {
+std::string Utils::date(std::string format) {
     time_t now = ::time(0);
     tm *ltm = localtime(&now);
 
@@ -22,6 +22,8 @@ std::string Utils::time(std::string format) {
             format.replace(i, 1, Utils::getMonthName(1 + ltm->tm_mon));
         else if (format[i] == 'z')
             format.replace(i, 1, "UTC");
+        else if (format[i] == 'D')
+            format.replace(i, 1, Utils::getDayName(ltm->tm_wday));
     }
     return format;
 }
@@ -85,9 +87,31 @@ std::string Utils::getMonthName(int month) {
     return monthNames[month - 1];
 }
 
+std::string Utils::getDayName(int day)
+{
+    static const char* dayNames[] = {
+            "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+    };
+    return dayNames[day];
+}
+
 std::string Utils::padStart(std::string str, size_t length, char padChar)
 {
     if (str.length() >= length)
         return str;
     return std::string(length - str.length(), padChar) + str;
+}
+
+std::string Utils::toUpper(std::string str)
+{
+    for (size_t i = 0; i < str.length(); i++)
+        str[i] = std::toupper(str[i]);
+    return str;
+}
+
+std::string Utils::toLower(std::string str)
+{
+    for (size_t i = 0; i < str.length(); i++)
+        str[i] = std::tolower(str[i]);
+    return str;
 }

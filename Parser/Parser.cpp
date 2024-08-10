@@ -50,7 +50,7 @@ userInfo Parser::userParse(std::string message)
     userInfo user;
     std::vector<std::string> words = Utils::split(message, " ");
     user.userName = words[1];
-    user.realName = words[4];
+    user.realName = words[4].replace(0, 1, "");
     return user;
 }
 

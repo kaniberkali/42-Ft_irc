@@ -18,6 +18,7 @@ class Channel
         size_t _limit;
         bool _inviteOnly;
         std::string _password;
+        std::string _topic;
     public:
         void addClient(std::string serverName, Client *client);
         Client* getClient(int fd);
@@ -48,7 +49,11 @@ class Channel
         void setLimit(int limit);
         void setInviteOnly(bool inviteOnly);
         void setPassword(std::string password);
+        void setTopic(std::string topic);
+        std::string getTopic();
         std::string getPassword();
+        std::string getModes();
+        int getLimit();
 };
 
 #endif

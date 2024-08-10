@@ -10,8 +10,8 @@
 #include <cstring>
 #include <vector>
 #include <netdb.h>
-
-
+#include <fcntl.h>
+#include <unistd.h>
 
 bool Server::_terminate = false;
 
@@ -28,6 +28,11 @@ Server::~Server()
         Logger::Warning("Closing client socket " + Utils::toString(_clients[i]->getFd().fd));
         Logger::Warning("Removing client " + Utils::toString(_clients[i]->getFd().fd));
         removeClient(_clients[i]->getFd().fd);
+    }
+    for (size_t i = 0; i < _channels.size(); i++)
+    {
+        Logger::Warning("Removing channel " + _channels[i]->getName());
+        removeChannel(_channels[i]->getName());
     }
     Logger::Warning("Closing server socket " + Utils::toString(_socketFd.fd));
     ::close(_socketFd.fd);
@@ -46,7 +51,7 @@ Server::Server(int port, std::string password) : _port(port), _password(password
     this->_terminate = false;
     this->_name = DEFAULT_NAME;
     this->_version = DEFAULT_VERSION;
-    this->_createdDate = Utils::time("d M Y H:i:s z");
+    this->_createdDate = Utils::date("D, d M Y H:i:s z");
     Logger::Info("Server starting on port " + Utils::toString(port) + " with password " + password);
     signal(SIGQUIT, &signalHandler);
     Logger::Trace("Signal QUIT handled");
@@ -89,6 +94,13 @@ void Server::init(void)
     _serverAddr.sin_addr.s_addr = INADDR_ANY;
     _serverAddr.sin_port = htons(_port);
 
+    int enabled = 1;
+    Logger::Trace("Setting server address");
+    if (setsockopt(socketPoll.fd, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(int)) < 0)
+        throw ServerException::SetSockOptException();
+    Logger::Trace("Server address set");
+    if (fcntl(socketPoll.fd, F_SETFL, O_NONBLOCK) < 0)
+        throw ServerException::FcntlException();
     Logger::Trace("Server address initialized");
     if (bind(socketPoll.fd, (struct sockaddr *) &_serverAddr, sizeof(_serverAddr)) < 0)
         throw ServerException::BindException();
@@ -108,7 +120,6 @@ void Server::listen(int fd, std::string hostName)
     socketPoll.fd = fd;
     socketPoll.events = POLLIN;
     Logger::Info("New client connecting");
-    Logger::Debug(hostName);
     Client *client = new Client(socketPoll, hostName);
     _clients.push_back(client);
     Logger::Info("New client connected");
@@ -143,8 +154,23 @@ void Server::removeClient(int fd)
             break;
         }
     }
+    for (size_t i = 0; i < _channels.size(); i++)
+        _channels[i]->removeClient(_channels[i]->getClient(fd));
     close(fd);
     Logger::Info("Client " + Utils::toString(fd) + " removed");
+}
+
+void Server::removeChannel(std::string name)
+{
+    for (size_t i = 0; i < _channels.size(); i++)
+    {
+        if (_channels[i]->getName() == name)
+        {
+            delete _channels[i];
+            _channels.erase(_channels.begin() + i);
+            break;
+        }
+    }
 }
 
 std::string Server::read(int fd)
@@ -156,8 +182,16 @@ std::string Server::read(int fd)
     if (readSize < 0)
         throw ServerException::ReadException();
     Logger::Trace("Read " + Utils::toString(readSize) + " bytes from client socket " + Utils::toString(fd));
-    Logger::Debug(std::string(buffer, readSize));
-    return std::string(buffer, readSize);
+    std::string message = std::string(buffer, readSize);
+    if (message.find("\r\n") != std::string::npos)
+    {
+        std::vector<std::string> messages = Utils::split(message, "\r\n");
+        for (size_t i = 0; i < messages.size(); i++)
+            Logger::Trace("Read: " + Utils::trim(messages[i]));
+    }
+    else
+        Logger::Trace("Read: " + message);
+    return message;
 }
 
 void Server::listen(void)
@@ -183,7 +217,7 @@ void Server::listen(void)
 
         if (pollResult == 0)
         {
-            // Logger::Trace("Server waiting for requests");
+            Logger::Trace("Server waiting for requests");
             continue;
         }
 
@@ -220,6 +254,16 @@ Client* Server::getClient(int fd)
     for (size_t i = 0; i < _clients.size(); i++)
     {
         if (_clients[i]->getFd().fd == fd)
+            return _clients[i];
+    }
+    return NULL;
+}
+
+Client* Server::getClient(std::string nickName)
+{
+    for (size_t i = 0; i < _clients.size(); i++)
+    {
+        if (_clients[i]->getNickName() == nickName)
             return _clients[i];
     }
     return NULL;

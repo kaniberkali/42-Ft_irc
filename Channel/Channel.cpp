@@ -1,6 +1,7 @@
 #include "Channel.hpp"
 #include "../Exception/ServerException.hpp"
 #include "../Exception/ClientException.hpp"
+#include "../Utils/Utils.hpp"
 
 void Channel::addClient(std::string serverName, Client *client)
 {
@@ -21,6 +22,12 @@ void Channel::removeClient(Client *client)
     {
         if (_clients[i] == client)
         {
+            try
+            {
+                if (getOperator(client->getNickName()) != NULL)
+                    removeOperator(_clients[i]);
+            }
+            catch (ServerException::NotAlreadyOperatorException &e) { }
             _clients.erase(_clients.begin() + i);
             break;
         }
@@ -252,4 +259,32 @@ void Channel::setPassword(std::string password)
 std::string Channel::getPassword()
 {
     return _password;
+}
+
+void Channel::setTopic(std::string topic)
+{
+    _topic = topic;
+}
+
+std::string Channel::getTopic()
+{
+    return _topic;
+}
+
+std::string Channel::getModes()
+{
+    std::string modes = "";
+
+    if (_password != "")
+        modes += " +k " + _password;
+    if (_limit != 0)
+        modes += " +l " + Utils::toString((int)_limit);
+    if (_inviteOnly)
+        modes += " +i";
+    return modes;
+}
+
+int Channel::getLimit()
+{
+    return _limit;
 }

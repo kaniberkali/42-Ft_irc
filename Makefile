@@ -22,7 +22,7 @@ CC = c++
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
 all: $(NAME)
-
+ 
 $(NAME): $(OBJ)
 	$(CC) $(OBJ) -o $(NAME)
 

@@ -7,6 +7,12 @@
 
 Client::Client(struct pollfd fd, std::string hostName) : _fd(fd), _login(false), _hostName(hostName)
 {
+    _nickName = "*";
+    _userName = "*";
+    _serverName = "*";
+    _realName = "*";
+    _password = "*";
+    _alreadyRegistered = false;
     Logger::Info("Client connected from " + _hostName, 0);
 }
 
@@ -80,12 +86,41 @@ void Client::login(serverInfo server, userInfo user)
 {
     if (server.password == user.password)
     {
-        Message::send(_fd.fd, ":"+ server.name +" 001 "+ user.nickName +" :Welcome to the Internet Relay Network "+ user.nickName + "!" + user.userName + "@0" +"\r\n");
-        Message::send(_fd.fd, ":"+ server.name +" 002 "+ user.nickName +" :Your host is *, running version "+ server.version +"\r\n");
-        Message::send(_fd.fd, ":"+ server.name +" 003 "+ user.nickName +" :This server was created "+ server.createDate +"\r\n");
-        Message::send(_fd.fd, ":"+ server.name +" 004 "+ user.nickName +" "+ server.version +" Available user modes: ,Available channel modes: iklot\r\n");
-        _login = true;
+        if (!_alreadyRegistered)
+        {
+            Message::send(_fd.fd,
+                          ":" + server.name + " 001 " + user.nickName + " Welcome to the Internet Relay Network :" +
+                          user.nickName + "!" + user.userName + "@" + user.hostName + "\r\n");
+            Message::send(_fd.fd, ":" + server.name + " 002 " + user.nickName + " Your host is "+server.name +", running version " +
+                                  server.version + "\r\n");
+            Message::send(_fd.fd, ":" + server.name + " 003 " + user.nickName + " This server was created " +
+                                  server.createDate + "\r\n");
+            Message::send(_fd.fd, ":" + server.name + " 004 " + user.nickName + " " + server.name +" " + server.version + " Available user modes:  Available channel modes: biklot\r\n");
+            _login = true;
+        }
     }
     else
         throw ClientException::PasswordMismatchException(server.name, _fd.fd, user.nickName);
 }
+
+void Client::setAlreadyRegistered(bool status)
+{
+    _alreadyRegistered = status;
+}
+
+bool Client::isAlreadyRegistered()
+{
+    return _alreadyRegistered;
+}
+
+userInfo Client::getInfo()
+{
+    userInfo info;
+    info.nickName = _nickName;
+    info.password = _password;
+    info.userName = _userName;
+    info.realName = _realName;
+    info.hostName = _hostName;
+    return info;
+}
+

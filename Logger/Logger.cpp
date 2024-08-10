@@ -5,17 +5,19 @@ void Logger::Log(std::string message, int level, int row, int column)
 {
     std::string print = "";
     if (level == Logger::FATAL)
-        print += "\033[1;31m" + Utils::time() + " [FATAL] ";
+        print += "\033[1;31m" + Utils::date() + " [FATAL] ";
     else if (level == Logger::ERROR)
-        print += "\033[0;31m" + Utils::time() + " [ERROR] ";
+        print += "\033[0;31m" + Utils::date() + " [ERROR] ";
     else if (level == Logger::WARNING)
-        print += "\033[0;33m" + Utils::time() + " [WARNING] ";
+        print += "\033[0;33m" + Utils::date() + " [WARNING] ";
     else if (level == Logger::INFO)
-        print += "\033[0;34m" + Utils::time() + " [INFO] ";
+        print += "\033[0;34m" + Utils::date() + " [INFO] ";
     else if (level == Logger::DEBUG)
-        print += "\033[0;32m" + Utils::time() + " [DEBUG] ";
+        print += "\033[0;32m" + Utils::date() + " [DEBUG] ";
     else if (level == Logger::TRACE)
-        print += "\033[0;37m" + Utils::time() + " [TRACE] ";
+        print += "\033[0;37m" + Utils::date() + " [TRACE] ";
+    else if (level == Logger::HEXCHAT)
+        print += "\033[1;36m" + Utils::date() + " [HEXCHAT] ";
 
     print += message;
     if (row != 0)
@@ -58,4 +60,9 @@ void Logger::Debug(std::string message, int row, int column)
 void Logger::Trace(std::string message, int row, int column)
 {
     Logger::Log(message, Logger::TRACE, row, column);
+}
+
+void Logger::HexChat(std::string message, int row, int column)
+{
+    Logger::Log(message, Logger::HEXCHAT, row, column);
 }

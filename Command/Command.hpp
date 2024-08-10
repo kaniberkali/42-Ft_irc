@@ -20,10 +20,12 @@ class Command
         static std::string MODE;
         static std::string KICK;
         static std::string INVITE;
+        static std::string TOPIC;
+        static std::string WHOIS;
 
         static std::string getCommand(std::string message);
         static void Execute(Server &server, std::string message, int fd);
-        static void execQuit(Server &server, int fd);
+        static void execQuit(Server &server, std::string message, int fd);
         static void execPart(Server &server, std::string message , int fd);
         static void execPrivMsg(Server &server, std::string message, int fd);
         static void sendMessage(const std::string& target, const std::string& message, int senderFd);
@@ -36,6 +38,8 @@ class Command
         static void execMode(Server &server, std::string message, int fd);
         static void execKick(Server &server, std::string message, int fd);
         static void execInvite(Server &server, std::string message, int fd);
+        static void execTopic(Server &server, std::string message, int fd);
+        static void execWhois(Server &server, std::string message, int fd);
 
 };
 
