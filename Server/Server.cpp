@@ -179,7 +179,12 @@ std::string Server::read(int fd)
     memset(buffer, 0, BUFFER_SIZE);
     Logger::Trace("Reading from client socket " + Utils::toString(fd));
     int readSize = recv(fd, buffer, BUFFER_SIZE, 0);
-    if (readSize < 0)
+    if (readSize == 0)
+    {
+        Logger::Info("User client buffer not readed correctly beacuse client is disconnected.");
+        removeClient(fd);
+    }
+    else if (readSize < 0)
         throw ServerException::ReadException();
     Logger::Trace("Read " + Utils::toString(readSize) + " bytes from client socket " + Utils::toString(fd));
     std::string message = std::string(buffer, readSize);
